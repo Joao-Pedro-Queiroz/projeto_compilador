@@ -1,8 +1,16 @@
 import sys
+import re
 
 class Calculadora:
     def __init__(self, expressao):
-        # Inicializa a expressão removendo espaços em branco
+        # Verifica se há espaços entre números ou operadores inválidos
+        if re.search(r'\d\s+\d', expressao):
+            raise ValueError("Expressão inválida: espaços entre números.")
+        
+        if re.search(r'[^\d\s\+\-]', expressao):
+            raise ValueError("Expressão inválida: contém caracteres inválidos.")
+        
+        # Remove espaços para facilitar a avaliação
         self.expressao = expressao.replace(" ", "")
     
     def evaluate(self):
