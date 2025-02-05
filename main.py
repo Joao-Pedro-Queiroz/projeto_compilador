@@ -46,14 +46,10 @@ class Calculadora:
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Use (exemplo): python main.py '1+2-3'")
-        sys.exit(1)
+        raise ValueError("Uso incorreto do programa.\nUse (exemplo): python main.py '1+2-3'")
 
     expressao = sys.argv[1]
-    calculadora = Calculadora(expressao)
     
-    try:
-        resultado = calculadora.evaluate()
-        print(f"{resultado}")
-    except Exception as e:
-        print(f"Erro: {e}")
+    calculadora = Calculadora(expressao)
+    resultado = calculadora.evaluate()
+    print(f"{resultado}")
