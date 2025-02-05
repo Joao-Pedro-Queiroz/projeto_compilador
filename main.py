@@ -46,6 +46,6 @@ if __name__ == "__main__":
     
     try:
         resultado = calculadora.evaluate()
-        print(f"Resultado: {resultado}")
+        print(f"{resultado}")
     except Exception as e:
         print(f"Erro: {e}")
