@@ -1,48 +1,86 @@
 import sys
 import re
 
-class Calculadora:
-    def __init__(self, expressao):
-        # Verifica se há espaços entre números ou operadores inválidos
-        if re.search(r'\d\s+\d', expressao):
-            raise ValueError("Expressão inválida: espaços entre números.")
-        
-        if re.search(r'[^\d\s\+\-]', expressao):
-            raise ValueError("Expressão inválida: contém caracteres inválidos.")
-        
-        # Remove espaços para facilitar a avaliação
-        self.expressao = expressao.replace(" ", "")
-    
-    def evaluate(self):
-        # Método público para avaliar a expressão
-        return self._evaluate_recursive(self.expressao)
-    
-    def _evaluate_recursive(self, expr):
-        """
-        Método recursivo para avaliar a expressão.
-        Ele busca o último operador (+ ou -) para respeitar a ordem correta.
-        """
-        # Base case: se a expressão for apenas um número, retorna como inteiro
-        if expr.isdigit() or (expr.startswith('-') and expr[1:].isdigit()):
-            return int(expr)
-        
-        # Operadores e suas funções associadas em um dicionário
-        operadores = {
-            '+': lambda x, y: x + y,
-            '-': lambda x, y: x - y
-        }
-        
-        # Procura o último operador para processar da direita para a esquerda
-        for i in range(len(expr) - 1, -1, -1):
-            if expr[i] in operadores:
-                esquerda = expr[:i]
-                direita = expr[i+1:]
-                
-                # Chamada recursiva para resolver subexpressões
-                return operadores[expr[i]](self._evaluate_recursive(esquerda), self._evaluate_recursive(direita))
 
-        # Se nenhum operador for encontrado, algo deu errado
-        raise ValueError("Expressão inválida")
+class Token:
+    def __init__(self, type: str, value):
+        self.type = type
+        self.value = value
+
+
+class Tokenizer:
+    def __init__(self, source: str, position: int, next: Token):
+        self.source = source
+        self.position = position
+        self.next = next
+    
+    def selectNext(self):
+        while self.position < len(self.source) and self.source[self.position] == ' ':
+            self.position += 1
+
+        if self.position < len(self.source):
+            char = self.source[self.position]
+            if char.isdigit():
+                self.next = Token("INTEGER", int(char))
+            elif char == '+':
+                self.next = Token("PLUS", char)
+            elif char == '-':
+                self.next = Token("UNKNOWN", char)
+            else:
+                raise ValueError("Caractere inválido")
+            
+            self.position += 1
+        else:
+            self.next = Token("EOF", None)
+
+
+class Parser:
+    def __init__(self, tokenizer: Tokenizer):
+        self.tokenizer = tokenizer
+
+    
+    @staticmethod
+    def parseExpression(self):
+        result = 0
+
+        while True:
+            token = self.tokenizer.next
+            if token.type == "INTEGER":
+                result += token.value
+            elif token.type == "PLUS":
+                self.tokenizer.selectNext() 
+                token = self.tokenizer.next
+                if token.type == "INTEGER":
+                    result += token.value
+                else:
+                    raise ValueError("Esperado um número após '+'")
+            elif token.type == "UNKNOWN":
+                self.tokenizer.selectNext()  # Avança para o próximo token
+                token = self.tokenizer.next
+                if token.type == "INTEGER":
+                    result -= token.value
+                else:
+                    raise ValueError("Esperado um número após '-'")
+            elif token.type == "EOF":
+                break
+            else:
+                raise ValueError("Caractere inválido")
+        
+        return result
+
+    
+    @staticmethod
+    def run(code):
+        tokenizer = Tokenizer(code, 0, None)
+        tokenizer.selectNext()
+        parser = Parser(tokenizer)
+        result = parser.parseExpression()
+
+        if tokenizer.next.type != "EOF":
+            raise ValueError("Erro: expressão não consumiu todos os tokens. Verifique a sintaxe.")
+        
+        return result
+    
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -50,6 +88,5 @@ if __name__ == "__main__":
 
     expressao = sys.argv[1]
     
-    calculadora = Calculadora(expressao)
-    resultado = calculadora.evaluate()
+    resultado = Parser.run(expressao)
     print(f"{resultado}")
