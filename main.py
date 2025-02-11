@@ -28,8 +28,8 @@ class Tokenizer:
                     self.position += 1
 
                 self.next = Token("INTEGER", int(num))
-
-            if char == '+':
+                self.position -= 1
+            elif char == '+':
                 self.next = Token("PLUS", char)
             elif char == '-':
                 self.next = Token("MINUS", char)
