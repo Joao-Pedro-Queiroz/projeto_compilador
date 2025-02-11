@@ -57,6 +57,8 @@ class Parser:
 
             if result == 0 and token.type != "INTEGER":
                 raise ValueError("Expressão deve iniviar com um número.")
+            elif result != 0 and token.type == "INTEGER":
+                raise ValueError("Entre dois números deve haver '+' ou '-'.")
 
             if token.type == "INTEGER":
                 result += token.value
