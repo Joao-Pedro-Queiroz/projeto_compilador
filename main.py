@@ -49,6 +49,9 @@ class Parser:
         result = 0
 
         while True:
+            if result != 0:
+                self.tokenizer.selectNext() 
+
             token = self.tokenizer.next
 
             if result == 0 and token.type != "INTEGER":
