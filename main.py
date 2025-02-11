@@ -21,11 +21,17 @@ class Tokenizer:
         if self.position < len(self.source):
             char = self.source[self.position]
             if char.isdigit():
-                self.next = Token("INTEGER", int(char))
+                num = ''
+                
+                while self.position < len(self.source) and self.source[self.position].isdigit():
+                    num += self.source[self.position]
+                    self.position += 1
+
+                self.next = Token("INTEGER", int(num))
             elif char == '+':
                 self.next = Token("PLUS", char)
             elif char == '-':
-                self.next = Token("UNKNOWN", char)
+                self.next = Token("MINUS", char)
             else:
                 raise ValueError("Caractere inválido")
             
@@ -39,10 +45,8 @@ class Parser:
         self.tokenizer = tokenizer
 
     
-    @staticmethod
     def parseExpression(self):
         result = 0
-
 
         while True:
             token = self.tokenizer.next
@@ -55,13 +59,15 @@ class Parser:
             elif token.type == "PLUS":
                 self.tokenizer.selectNext() 
                 token = self.tokenizer.next
+
                 if token.type == "INTEGER":
                     result += token.value
                 else:
                     raise ValueError("Esperado um número após '+'")
-            elif token.type == "UNKNOWN":
-                self.tokenizer.selectNext()  # Avança para o próximo token
+            elif token.type == "MINUS":
+                self.tokenizer.selectNext()
                 token = self.tokenizer.next
+                
                 if token.type == "INTEGER":
                     result -= token.value
                 else:
