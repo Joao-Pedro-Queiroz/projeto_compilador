@@ -43,8 +43,13 @@ class Parser:
     def parseExpression(self):
         result = 0
 
+
         while True:
             token = self.tokenizer.next
+
+            if result == 0 and token.type != "INTEGER":
+                raise ValueError("Expressão deve iniviar com um número.")
+
             if token.type == "INTEGER":
                 result += token.value
             elif token.type == "PLUS":
