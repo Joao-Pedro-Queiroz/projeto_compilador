@@ -20,6 +20,7 @@ class Tokenizer:
 
         if self.position < len(self.source):
             char = self.source[self.position]
+
             if char.isdigit():
                 num = ''
                 
@@ -47,42 +48,32 @@ class Parser:
 
     
     def parseExpression(self):
-        result = 0
+        if self.tokenizer.next.type != "INTEGER":
+            raise ValueError("Expressão deve iniciar com um número.")
 
-        while True:
-            if result != 0:
-                self.tokenizer.selectNext() 
+        result = self.tokenizer.next.value
+        self.tokenizer.selectNext()
 
-            token = self.tokenizer.next
+        if self.tokenizer.next.type == "INTEGER":
+            raise ValueError("Dois números consecutivos sem operador são inválidos.")
 
-            if result == 0 and token.type != "INTEGER":
-                raise ValueError("Expressão deve iniviar com um número.")
-            elif result != 0 and token.type == "INTEGER":
-                raise ValueError("Entre dois números deve haver '+' ou '-'.")
+        while self.tokenizer.next.type in ("PLUS", "MINUS"):
+            operador = self.tokenizer.next.type
+            self.tokenizer.selectNext()
 
-            if token.type == "INTEGER":
-                result += token.value
-            elif token.type == "PLUS":
-                self.tokenizer.selectNext() 
-                token = self.tokenizer.next
+            if self.tokenizer.next.type != "INTEGER":
+                raise ValueError(f"Esperado um número após '{'+' if operador == 'PLUS' else '-'}'")
 
-                if token.type == "INTEGER":
-                    result += token.value
-                else:
-                    raise ValueError("Esperado um número após '+'")
-            elif token.type == "MINUS":
-                self.tokenizer.selectNext()
-                token = self.tokenizer.next
-                
-                if token.type == "INTEGER":
-                    result -= token.value
-                else:
-                    raise ValueError("Esperado um número após '-'")
-            elif token.type == "EOF":
-                break
-            else:
-                raise ValueError("Caractere inválido")
-        
+            if operador == "PLUS":
+                result += self.tokenizer.next.value
+            elif operador == "MINUS":
+                result -= self.tokenizer.next.value
+
+            self.tokenizer.selectNext()
+
+            if self.tokenizer.next.type == "INTEGER":
+                raise ValueError("Dois números consecutivos sem operador são inválidos.")
+
         return result
 
     
