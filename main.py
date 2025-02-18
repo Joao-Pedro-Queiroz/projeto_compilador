@@ -34,6 +34,10 @@ class Tokenizer:
                 self.next = Token("PLUS", char)
             elif char == '-':
                 self.next = Token("MINUS", char)
+            elif char == '*':
+                self.next = Token("MULT", char)
+            elif char == '/':
+                self.next = Token("DIV", char)
             else:
                 raise ValueError("Caractere inválido")
             
@@ -47,27 +51,27 @@ class Parser:
         self.tokenizer = tokenizer
 
     
-    def parseExpression(self):
-        if self.tokenizer.next.type != "INTEGER":
-            raise ValueError("Expressão deve iniciar com um número.")
-
+    def parseTerm(self):
         result = self.tokenizer.next.value
         self.tokenizer.selectNext()
 
         if self.tokenizer.next.type == "INTEGER":
             raise ValueError("Dois números consecutivos sem operador são inválidos.")
 
-        while self.tokenizer.next.type in ("PLUS", "MINUS"):
+        while self.tokenizer.next.type in ("MULT", "DIV"):
             operador = self.tokenizer.next.type
             self.tokenizer.selectNext()
 
             if self.tokenizer.next.type != "INTEGER":
-                raise ValueError(f"Esperado um número após '{'+' if operador == 'PLUS' else '-'}'")
+                raise ValueError(f"Esperado número após '{operador}'.")
 
-            if operador == "PLUS":
-                result += self.tokenizer.next.value
-            elif operador == "MINUS":
-                result -= self.tokenizer.next.value
+            if operador == "MULT":
+                result *= self.tokenizer.next.value
+            elif operador == "DIV":
+                if self.tokenizer.next.value == 0:
+                    raise ZeroDivisionError("Divisão por zero não permitida.")
+
+                result //= self.tokenizer.next.value
 
             self.tokenizer.selectNext()
 
@@ -76,6 +80,28 @@ class Parser:
 
         return result
 
+    
+    def parseExpression(self):
+        if self.tokenizer.next.type != "INTEGER":
+            raise ValueError("Termo deve iniciar com um número.")
+
+        result = self.parseTerm()
+
+        while self.tokenizer.next.type in ("PLUS", "MINUS"):
+            operador = self.tokenizer.next.type
+            self.tokenizer.selectNext()
+
+            if self.tokenizer.next.type != "INTEGER":
+                raise ValueError(f"Esperado número após '{operador}'.")
+
+            termo = self.parseTerm()
+
+            if operador == "PLUS":
+                result += termo
+            elif operador == "MINUS":
+                result -= termo
+
+        return result
     
     @staticmethod
     def run(code):
