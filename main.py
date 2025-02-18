@@ -52,6 +52,9 @@ class Parser:
 
     
     def parseTerm(self):
+        if self.tokenizer.next.type != "INTEGER":
+            raise ValueError("Esperado um número no inicío do termo.")
+        
         result = self.tokenizer.next.value
         self.tokenizer.selectNext()
 
@@ -82,17 +85,11 @@ class Parser:
 
     
     def parseExpression(self):
-        if self.tokenizer.next.type != "INTEGER":
-            raise ValueError("Termo deve iniciar com um número.")
-
         result = self.parseTerm()
 
         while self.tokenizer.next.type in ("PLUS", "MINUS"):
             operador = self.tokenizer.next.type
             self.tokenizer.selectNext()
-
-            if self.tokenizer.next.type != "INTEGER":
-                raise ValueError(f"Esperado número após '{operador}'.")
 
             termo = self.parseTerm()
 
