@@ -11,3 +11,7 @@
 # Diagrama sintático da versão 1.1
 
 ![Diagrama sintático 1.1](./img/diagrama_sintático1.png)
+
+# Diagrama sintático da versão 1.2
+
+![Diagrama sintático 1.2](./img/diagrama_sintático2.png)
