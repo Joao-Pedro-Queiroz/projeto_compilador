@@ -29,7 +29,7 @@ class Tokenizer:
                     self.position += 1
 
                 self.next = Token("INTEGER", int(num))
-                self.position -= 1
+                return
             elif char == '+':
                 self.next = Token("PLUS", char)
             elif char == '-':
@@ -38,6 +38,10 @@ class Tokenizer:
                 self.next = Token("MULT", char)
             elif char == '/':
                 self.next = Token("DIV", char)
+            elif char == '(': 
+                self.next = Token("LPAREN", char)
+            elif char == ')':
+                self.next = Token("RPAREN", char)
             else:
                 raise ValueError("Caractere inválido")
             
