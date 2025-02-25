@@ -54,36 +54,48 @@ class Parser:
     def __init__(self, tokenizer: Tokenizer):
         self.tokenizer = tokenizer
 
+
+    def parseFactor(self):
+        token = self.tokenizer.next
+
+        if token.type == "INTEGER":
+            self.tokenizer.selectNext()
+            return token.value
+        elif token.type == "PLUS":
+            self.tokenizer.selectNext()
+            return +self.parseFactor()
+        elif token.type == "MINUS":
+            self.tokenizer.selectNext()
+            return -self.parseFactor()
+        elif token.type == "LPAREN":
+            self.tokenizer.selectNext()
+            result = self.parseExpression()
+
+            if self.tokenizer.next.type != "RPAREN":
+                raise ValueError("Parênteses desbalanceados")
+            
+            self.tokenizer.selectNext()
+            return result
+        else:
+            raise ValueError(f"Token inesperado: {token.type}")
+
     
     def parseTerm(self):
-        if self.tokenizer.next.type != "INTEGER":
-            raise ValueError("Esperado um número no inicío do termo.")
-        
-        result = self.tokenizer.next.value
-        self.tokenizer.selectNext()
-
-        if self.tokenizer.next.type == "INTEGER":
-            raise ValueError("Dois números consecutivos sem operador são inválidos.")
+        result = self.parseFactor()
 
         while self.tokenizer.next.type in ("MULT", "DIV"):
             operador = self.tokenizer.next.type
             self.tokenizer.selectNext()
 
-            if self.tokenizer.next.type != "INTEGER":
-                raise ValueError(f"Esperado número após '{operador}'.")
+            termo = self.parseFactor()
 
             if operador == "MULT":
-                result *= self.tokenizer.next.value
+                result *= termo
             elif operador == "DIV":
-                if self.tokenizer.next.value == 0:
+                if termo == 0:
                     raise ZeroDivisionError("Divisão por zero não permitida.")
 
-                result //= self.tokenizer.next.value
-
-            self.tokenizer.selectNext()
-
-            if self.tokenizer.next.type == "INTEGER":
-                raise ValueError("Dois números consecutivos sem operador são inválidos.")
+                result //= termo
 
         return result
 
