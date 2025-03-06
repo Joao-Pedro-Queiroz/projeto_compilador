@@ -2,6 +2,12 @@ import sys
 import re
 
 
+class PrePro:
+    @staticmethod
+    def filter(code: str):
+      return re.sub(r'//.*', '', code).strip()  
+
+
 class Token:
     def __init__(self, type: str, value):
         self.type = type
@@ -134,6 +140,8 @@ if __name__ == "__main__":
         raise ValueError("Uso incorreto do programa.\nUse (exemplo): python main.py '1+2-3'")
 
     expressao = sys.argv[1]
+
+    expressao = PrePro.filter(expressao)
     
     resultado = Parser.run(expressao)
     print(f"{resultado}")
