@@ -3,13 +3,68 @@ import re
 from abc import ABC, abstractmethod
 
 class Node(ABC):
-    def __init__(self, value, children=[]):
+    def __init__(self, value, children: list):
         self.value = value
         self.children = children
 
     @abstractmethod
     def Evaluate(self):
         pass
+
+
+
+class BinOp(Node):
+    def __init__(self, value, left, right):
+        super().__init__(value, [left, right])
+
+
+    def Evaluate(self):
+        left_value = self.children[0].Evaluate()
+        right_value = self.children[1].Evaluate()
+
+        if self.value == "+":
+            return left_value + right_value
+        elif self.value == "-":
+            return left_value - right_value
+        elif self.value == "*":
+            return left_value * right_value
+        elif self.value == "/":
+            if right_value == 0:
+                raise ZeroDivisionError("Erro: divisão por zero.")
+            return left_value // right_value
+        else:
+            raise ValueError(f"Operador binário desconhecido: {self.value}")
+
+
+class UnOp(Node):
+    def __init__(self, value, child):
+        super().__init__(value, [child])
+
+    def Evaluate(self):
+        child_value = self.children[0].Evaluate()
+
+        if self.value == "+":
+            return +child_value
+        elif self.value == "-":
+            return -child_value
+        else:
+            raise ValueError(f"Operador unário desconhecido: {self.value}")
+
+
+class IntVal(Node):
+    def __init__(self, value):
+        super().__init__(value, [])
+
+    def Evaluate(self):
+        return self.value
+
+
+class NoOp(Node):
+    def __init__(self):
+        super().__init__(None, [])
+
+    def Evaluate(self):
+        return 0
 
 
 class PrePro:
