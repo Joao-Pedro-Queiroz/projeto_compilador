@@ -131,13 +131,13 @@ class Parser:
 
         if token.type == "INTEGER":
             self.tokenizer.selectNext()
-            return token.value
+            return IntVal(token.value)
         elif token.type == "PLUS":
             self.tokenizer.selectNext()
-            return +self.parseFactor()
+            return UnOp("+", self.parseFactor())
         elif token.type == "MINUS":
             self.tokenizer.selectNext()
-            return -self.parseFactor()
+            return UnOp("-", self.parseFactor())
         elif token.type == "LPAREN":
             self.tokenizer.selectNext()
             result = self.parseExpression()
@@ -152,61 +152,66 @@ class Parser:
 
     
     def parseTerm(self):
-        result = self.parseFactor()
+        left = self.parseFactor()
 
         while self.tokenizer.next.type in ("MULT", "DIV"):
             operador = self.tokenizer.next.type
             self.tokenizer.selectNext()
 
-            termo = self.parseFactor()
+            right = self.parseFactor()
 
             if operador == "MULT":
-                result *= termo
+                left = BinOp("*", left, right)
             elif operador == "DIV":
-                if termo == 0:
-                    raise ZeroDivisionError("Divisão por zero não permitida.")
+                left = BinOp("/", left, right)
 
-                result //= termo
-
-        return result
+        return left  
 
     
     def parseExpression(self):
-        result = self.parseTerm()
+        left = self.parseTerm()
 
         while self.tokenizer.next.type in ("PLUS", "MINUS"):
             operador = self.tokenizer.next.type
             self.tokenizer.selectNext()
 
-            termo = self.parseTerm()
+            right = self.parseTerm()
 
             if operador == "PLUS":
-                result += termo
+                left = BinOp("+", left, right)
             elif operador == "MINUS":
-                result -= termo
+                left = BinOp("-", left, right)
 
-        return result
+        return left
     
     @staticmethod
     def run(code):
         tokenizer = Tokenizer(code, 0, None)
         tokenizer.selectNext()
         parser = Parser(tokenizer)
-        result = parser.parseExpression()
+        root = parser.parseExpression()
 
         if tokenizer.next.type != "EOF":
             raise ValueError("Erro: expressão não consumiu todos os tokens. Verifique a sintaxe.")
         
-        return result
+        return root
     
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         raise ValueError("Uso incorreto do programa.\nUse (exemplo): python main.py '1+2-3'")
 
-    expressao = sys.argv[1]
+    arquivo = sys.argv[1]
+
+    if not arquivo.endswith('.zig'):
+        raise ValueError("O arquivo deve ter a extensão '.zig'.")
+
+    with open(arquivo, 'r') as file:
+        expressao = file.read()
 
     expressao = PrePro.filter(expressao)
     
-    resultado = Parser.run(expressao)
+    root = Parser.run(expressao)
+
+    resultado = root.Evaluate()
     print(f"{resultado}")
