@@ -12,7 +12,6 @@ class Node(ABC):
         pass
 
 
-
 class BinOp(Node):
     def __init__(self, value, left, right):
         super().__init__(value, [left, right])
