@@ -2,13 +2,31 @@ import sys
 import re
 from abc import ABC, abstractmethod
 
+
+class SymbolTable:
+    def __init__(self):
+        self.symbols = {}
+
+    
+    def set(self, identifier, value):
+        self.symbols[identifier] = value
+    
+
+    def get(self, identifier):
+        if identifier in self.symbols:
+            return self.symbols[identifier]
+        else:
+            raise ValueError(f"Variável não definida: {identifier}")
+
+
 class Node(ABC):
     def __init__(self, value, children: list):
         self.value = value
         self.children = children
 
+
     @abstractmethod
-    def Evaluate(self):
+    def Evaluate(self, symbol_table):
         pass
 
 
@@ -17,9 +35,9 @@ class BinOp(Node):
         super().__init__(value, [left, right])
 
 
-    def Evaluate(self):
-        left_value = self.children[0].Evaluate()
-        right_value = self.children[1].Evaluate()
+    def Evaluate(self, symbol_table):
+        left_value = self.children[0].Evaluate(symbol_table)
+        right_value = self.children[1].Evaluate(symbol_table)
 
         if self.value == "+":
             return left_value + right_value
@@ -39,8 +57,9 @@ class UnOp(Node):
     def __init__(self, value, child):
         super().__init__(value, [child])
 
-    def Evaluate(self):
-        child_value = self.children[0].Evaluate()
+
+    def Evaluate(self, symbol_table):
+        child_value = self.children[0].Evaluate(symbol_table)
 
         if self.value == "+":
             return +child_value
@@ -54,22 +73,65 @@ class IntVal(Node):
     def __init__(self, value):
         super().__init__(value, [])
 
-    def Evaluate(self):
+
+    def Evaluate(self, symbol_table):
         return self.value
+
+
+class Identifier(Node):
+    def __init__(self, value):
+        super().__init__(value, [])
+
+
+    def Evaluate(self, symbol_table):
+        return symbol_table.get(self.value)
+
+
+class Assignment(Node):
+    def __init__(self, identifier, expression):
+        super().__init__("=", [identifier, expression])
+
+
+    def Evaluate(self, symbol_table):
+        value = self.children[1].Evaluate(symbol_table)
+        symbol_table.set(self.children[0].value, value)
+        return value
+
+
+class Print(Node):
+    def __init__(self, expression):
+        super().__init__("print", [expression])
+
+
+    def Evaluate(self, symbol_table):
+        value = self.children[0].Evaluate(symbol_table)
+        print(value)
+        return value
+
+
+class Block(Node):
+    def __init__(self, statements):
+        super().__init__("block", statements)
+
+
+    def Evaluate(self, symbol_table):
+        for statement in self.children:
+            statement.Evaluate(symbol_table)
 
 
 class NoOp(Node):
     def __init__(self):
         super().__init__(None, [])
 
-    def Evaluate(self):
+
+    def Evaluate(self, symbol_table):
         return 0
 
 
 class PrePro:
     @staticmethod
     def filter(code: str):
-      return re.sub(r'//.*', '', code).strip()  
+        return re.sub(r'//.*', '', code).strip()
 
 
 class Token:
@@ -83,6 +145,7 @@ class Tokenizer:
         self.source = source
         self.position = position
         self.next = next
+        self.keywords = {"print": "PRINT"}
     
     def selectNext(self):
         while self.position < len(self.source) and self.source[self.position] == ' ':
@@ -100,6 +163,15 @@ class Tokenizer:
 
                 self.next = Token("INTEGER", int(num))
                 return
+            elif char.isalpha():
+                ident = ''
+
+                while self.position < len(self.source) and (self.source[self.position].isalnum() or self.source[self.position] == '_'):
+                    ident += self.source[self.position]
+                    self.position += 1
+
+                self.next = Token(self.keywords.get(ident, "IDENTIFIER"), ident)
+                return
             elif char == '+':
                 self.next = Token("PLUS", char)
             elif char == '-':
@@ -112,6 +184,14 @@ class Tokenizer:
                 self.next = Token("LPAREN", char)
             elif char == ')':
                 self.next = Token("RPAREN", char)
+            elif char == '{': 
+                self.next = Token("LBRACE", char)
+            elif char == '}': 
+                self.next = Token("RBRACE", char)
+            elif char == '=': 
+                self.next = Token("ASSIGN", char)
+            elif char == ';': 
+                self.next = Token("SEMI", char)
             else:
                 raise ValueError("Caractere inválido")
             
@@ -123,6 +203,49 @@ class Tokenizer:
 class Parser:
     def __init__(self, tokenizer: Tokenizer):
         self.tokenizer = tokenizer
+
+    
+    def parseBlock(self):
+        statements = []
+
+        if self.tokenizer.next.type == "LBRACE":
+            self.tokenizer.selectNext()
+
+            while self.tokenizer.next.type != "RBRACE":
+                statements.append(self.parseStatement())
+
+            self.tokenizer.selectNext()
+
+        return Block(statements)
+    
+
+    def parseStatement(self):
+        if self.tokenizer.next.type == "IDENTIFIER":
+            identifier = Identifier(self.tokenizer.next.value)
+            self.tokenizer.selectNext()
+
+            if self.tokenizer.next.type == "ASSIGN":
+                self.tokenizer.selectNext()
+                expr = self.parseExpression()
+
+                if self.tokenizer.next.type != "SEMI":
+                    raise ValueError("Ponto e vírgula esperado")
+                
+                self.tokenizer.selectNext()
+                return Assignment(identifier, expr)
+            
+            
+        elif self.tokenizer.next.type == "PRINT":
+            self.tokenizer.selectNext()
+            expr = self.parseExpression()
+
+            if self.tokenizer.next.type != "SEMI":
+                raise ValueError("Ponto e vírgula esperado")
+
+            self.tokenizer.selectNext()
+            return Print(expr)
+
+        return NoOp()
 
 
     def parseFactor(self):
@@ -183,12 +306,13 @@ class Parser:
 
         return left
     
+
     @staticmethod
     def run(code):
         tokenizer = Tokenizer(code, 0, None)
         tokenizer.selectNext()
         parser = Parser(tokenizer)
-        root = parser.parseExpression()
+        root = parser.parseBlock()
 
         if tokenizer.next.type != "EOF":
             raise ValueError("Erro: expressão não consumiu todos os tokens. Verifique a sintaxe.")
@@ -209,8 +333,7 @@ if __name__ == "__main__":
         expressao = file.read()
 
     expressao = PrePro.filter(expressao)
-    
     root = Parser.run(expressao)
-
-    resultado = root.Evaluate()
-    print(f"{resultado}")
+    
+    symbol_table = SymbolTable()
+    root.Evaluate(symbol_table)
