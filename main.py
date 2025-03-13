@@ -147,7 +147,7 @@ class Tokenizer:
         self.source = source
         self.position = position
         self.next = next
-        self.keywords = {"print": "PRINT", "Print": "PRINT"}
+        self.keywords = {"print": "PRINT"}
     
     def selectNext(self):
         while self.position < len(self.source) and (self.source[self.position] == ' ' or self.source[self.position] == '\n'):
@@ -162,6 +162,9 @@ class Tokenizer:
                 while self.position < len(self.source) and self.source[self.position].isdigit():
                     num += self.source[self.position]
                     self.position += 1
+                
+                if self.position < len(self.source) and self.source[self.position].isalpha():
+                    raise ValueError(f"Erro de sintaxe: número seguido de letra sem separação: {num}{self.source[self.position]}")
 
                 self.next = Token("INTEGER", int(num))
                 return
@@ -174,8 +177,8 @@ class Tokenizer:
 
                 token_type = self.keywords.get(ident, "IDENTIFIER")
 
-                if token_type == "IDENTIFIER" and ident[0].isupper():
-                    raise ValueError(f"Identificador inválido: {ident}")
+                if ident[0].isupper():
+                    raise ValueError(f"Erro: Identificadores não podem começar com letra maiúscula: {ident}")
                 
                 self.next = Token(token_type, ident)
                 return
