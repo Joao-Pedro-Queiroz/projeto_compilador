@@ -215,6 +215,8 @@ class Parser:
                 statements.append(self.parseStatement())
 
             self.tokenizer.selectNext()
+        else:
+            return NoOp()
 
         return Block(statements)
     
