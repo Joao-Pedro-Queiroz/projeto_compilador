@@ -172,7 +172,12 @@ class Tokenizer:
                     ident += self.source[self.position]
                     self.position += 1
 
-                self.next = Token(self.keywords.get(ident, "IDENTIFIER"), ident)
+                token_type = self.keywords.get(ident, "IDENTIFIER")
+
+                if token_type == "IDENTIFIER" and ident[0].isupper():
+                    raise ValueError(f"Identificador inválido: {ident}")
+                
+                self.next = Token(token_type, ident)
                 return
             elif char == '+':
                 self.next = Token("PLUS", char)
@@ -214,6 +219,9 @@ class Parser:
             self.tokenizer.selectNext()
 
             while self.tokenizer.next.type != "RBRACE":
+                if self.tokenizer.next.type == "EOF":
+                     raise ValueError("Erro de sintaxe: bloco não fechado corretamente")
+
                 statements.append(self.parseStatement())
 
             self.tokenizer.selectNext()
@@ -264,7 +272,7 @@ class Parser:
             return IntVal(token.value)
         elif token.type == "IDENTIFIER":
             self.tokenizer.selectNext()
-            return Identifier(self.tokenizer.next.value)
+            return Identifier(token.value)
         elif token.type == "PLUS":
             self.tokenizer.selectNext()
             return UnOp("+", self.parseFactor())
