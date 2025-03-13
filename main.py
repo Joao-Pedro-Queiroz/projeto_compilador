@@ -150,7 +150,7 @@ class Tokenizer:
         self.keywords = {"print": "PRINT"}
     
     def selectNext(self):
-        while self.position < len(self.source) and self.source[self.position] == ' ':
+        while self.position < len(self.source) and (self.source[self.position] == ' ' or self.source[self.position] == '\n'):
             self.position += 1
 
         if self.position < len(self.source):
@@ -195,7 +195,6 @@ class Tokenizer:
             elif char == ';': 
                 self.next = Token("SEMI", char)
             else:
-                print(f"Erro: caractere inválido encontrado '{char}' na posição {self.position}")
                 raise ValueError("Caractere inválido")
             
             self.position += 1
