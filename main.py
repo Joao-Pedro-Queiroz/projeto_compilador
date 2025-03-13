@@ -255,8 +255,6 @@ class Parser:
                 
                 self.tokenizer.selectNext()
                 return Assignment(identifier, expr)
-            
-            
         elif self.tokenizer.next.type == "PRINT":
             self.tokenizer.selectNext()
             expr = self.parseExpression()
@@ -266,6 +264,8 @@ class Parser:
 
             self.tokenizer.selectNext()
             return Print(expr)
+        elif self.tokenizer.next.type == "INTEGER":
+            raise ValueError(f"Erro de sintaxe: números não podem ser usados como identificadores ({self.tokenizer.next.value})")
 
         return NoOp()
 
