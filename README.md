@@ -6,12 +6,16 @@
 
 # Diagrama sintático da versão 1.0
 
-![Diagrama sintático 1.0](./img/diagrama_sintático0.png)
+![Diagrama sintático 1.0](./img/diagrama_sintático_v1_0.png)
 
 # Diagrama sintático da versão 1.1
 
-![Diagrama sintático 1.1](./img/diagrama_sintático1.png)
+![Diagrama sintático 1.1](./img/diagrama_sintático_v1_1.png)
 
-# Diagrama sintático da versão 1.2
+# Diagrama sintático da versão 1.2 e 2.0
 
-![Diagrama sintático 1.2](./img/diagrama_sintático2.png)
+![Diagrama sintático 1.2](./img/diagrama_sintático_v1_2.png)
+
+# EBNF da versão 2.1
+
+![Diagrama sintático 1.2](./img/diagrama_sintático_v2_1.png)
