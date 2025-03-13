@@ -16,6 +16,7 @@
 
 ![Diagrama sintático 1.2](./img/diagrama_sintático_v1_2.png)
 
-# EBNF da versão 2.1
+# Diagrama sintático e EBNF da versão 2.1
 
+![Diagrama sintático 2.1](./img/diagrama_sintático_v2_1.png)
 ![EBNF 2.1](./img/EBNF_v2_1.png)

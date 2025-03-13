@@ -222,6 +222,10 @@ class Parser:
     
 
     def parseStatement(self):
+        if self.tokenizer.next.type == "SEMI":
+            self.tokenizer.selectNext() 
+            return NoOp()
+    
         if self.tokenizer.next.type == "IDENTIFIER":
             identifier = Identifier(self.tokenizer.next.value)
             self.tokenizer.selectNext()
@@ -334,7 +338,11 @@ if __name__ == "__main__":
     with open(arquivo, 'r') as file:
         expressao = file.read()
 
+    print(expressao)
+
     expressao = PrePro.filter(expressao)
+
+    print(expressao)
     root = Parser.run(expressao)
     
     symbol_table = SymbolTable()
