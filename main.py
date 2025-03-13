@@ -46,8 +46,10 @@ class BinOp(Node):
         elif self.value == "*":
             return left_value * right_value
         elif self.value == "/":
+
             if right_value == 0:
                 raise ZeroDivisionError("Erro: divisão por zero.")
+            
             return left_value // right_value
         else:
             raise ValueError(f"Operador binário desconhecido: {self.value}")
@@ -193,6 +195,7 @@ class Tokenizer:
             elif char == ';': 
                 self.next = Token("SEMI", char)
             else:
+                print(f"Erro: caractere inválido encontrado '{char}' na posição {self.position}")
                 raise ValueError("Caractere inválido")
             
             self.position += 1
@@ -338,11 +341,7 @@ if __name__ == "__main__":
     with open(arquivo, 'r') as file:
         expressao = file.read()
 
-    print(expressao)
-
     expressao = PrePro.filter(expressao)
-
-    print(expressao)
     root = Parser.run(expressao)
     
     symbol_table = SymbolTable()
