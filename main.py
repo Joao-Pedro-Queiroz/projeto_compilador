@@ -247,6 +247,9 @@ class Parser:
                 self.tokenizer.selectNext()
                 expr = self.parseExpression()
 
+                if not isinstance(identifier, Identifier):
+                    raise ValueError("Erro de sintaxe: o lado esquerdo da atribuição deve ser um identificador.")
+
                 if self.tokenizer.next.type != "SEMI":
                     raise ValueError("Ponto e vírgula esperado")
                 
