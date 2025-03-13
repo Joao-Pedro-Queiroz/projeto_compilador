@@ -147,7 +147,7 @@ class Tokenizer:
         self.source = source
         self.position = position
         self.next = next
-        self.keywords = {"print": "PRINT"}
+        self.keywords = {"print": "PRINT", "Print": "PRINT"}
     
     def selectNext(self):
         while self.position < len(self.source) and (self.source[self.position] == ' ' or self.source[self.position] == '\n'):
@@ -262,6 +262,9 @@ class Parser:
         if token.type == "INTEGER":
             self.tokenizer.selectNext()
             return IntVal(token.value)
+        elif token.type == "IDENTIFIER":
+            self.tokenizer.selectNext()
+            return Identifier(self.tokenizer.next.value)
         elif token.type == "PLUS":
             self.tokenizer.selectNext()
             return UnOp("+", self.parseFactor())
