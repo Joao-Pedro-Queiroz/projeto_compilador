@@ -18,4 +18,4 @@
 
 # EBNF da versão 2.1
 
-![Diagrama sintático 1.2](./img/diagrama_sintático_v2_1.png)
+![EBNF 2.1](./img/EBNF_v2_1.png)
