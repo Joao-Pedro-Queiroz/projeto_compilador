@@ -313,6 +313,9 @@ class Parser:
         elif token.type == "MINUS":
             self.tokenizer.selectNext()
             return UnOp("-", self.parseFactor())
+        elif token.type == "NOT":
+            self.tokenizer.selectNext()
+            return UnOp("!", self.parseFactor())
         elif token.type == "LPAREN":
             self.tokenizer.selectNext()
             result = self.parseExpression()
@@ -356,6 +359,45 @@ class Parser:
                 left = BinOp("+", left, right)
             elif operador == "MINUS":
                 left = BinOp("-", left, right)
+
+        return left
+    
+    
+    def parseRelationalExpression(self):
+        left = self.parseExpression()
+
+        while self.tokenizer.next.type in ("EQUAL", "GREATER", "LESS"):
+            operador = self.tokenizer.next.type
+            self.tokenizer.selectNext()
+
+            right = self.parseExpression()
+
+            left = BinOp(operador, left, right)
+
+        return left
+    
+    def parseAndExpression(self):
+        left = self.parseRelationalExpression()
+
+        while self.tokenizer.next.type == "AND":
+            operador = self.tokenizer.next.type
+            self.tokenizer.selectNext()
+
+            right = self.parseRelationalExpression()
+
+            left = BinOp(operador, left, right)
+
+        return left
+    
+    def parseOrExpression(self):
+        left = self.parseAndExpression()
+
+        while self.tokenizer.next.type == "OR":
+            operador = self.tokenizer.next.type
+            self.tokenizer.selectNext()
+            right = self.parseAndExpression()
+
+            left = BinOp(operador, left, right)
 
         return left
     
