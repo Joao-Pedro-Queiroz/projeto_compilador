@@ -51,6 +51,16 @@ class BinOp(Node):
                 raise ZeroDivisionError("Erro: divisão por zero.")
             
             return left_value // right_value
+        elif self.value == "&&":
+            return 1 if left_value and right_value else 0
+        elif self.value == "||":
+            return 1 if left_value or right_value else 0
+        elif self.value == "==":
+            return 1 if left_value == right_value else 0
+        elif self.value == ">":
+            return 1 if left_value > right_value else 0
+        elif self.value == "<":
+            return 1 if left_value < right_value else 0
         else:
             raise ValueError(f"Operador binário desconhecido: {self.value}")
 
@@ -67,6 +77,8 @@ class UnOp(Node):
             return +child_value
         elif self.value == "-":
             return -child_value
+        elif self.value == "!":
+            return 1 if not child_value else 0
         else:
             raise ValueError(f"Operador unário desconhecido: {self.value}")
 
@@ -198,10 +210,26 @@ class Tokenizer:
                 self.next = Token("LBRACE", char)
             elif char == '}': 
                 self.next = Token("RBRACE", char)
-            elif char == '=': 
-                self.next = Token("ASSIGN", char)
+            elif char == "=":
+                if self.position + 1 < len(self.source) and self.source[self.position + 1] == "=":
+                    self.next = Token("EQUAL", char * 2)
+                    self.position += 1
+                else:
+                    self.next = Token("ASSIGN", char)
             elif char == ';': 
                 self.next = Token("SEMI", char)
+            elif char == "&" and self.position + 1 < len(self.source) and self.source[self.position + 1] == "&":
+                self.next = Token("AND", char * 2)
+                self.position += 1
+            elif char == "|" and self.position + 1 < len(self.source) and self.source[self.position + 1] == "|":
+                self.next = Token("OR", char * 2)
+                self.position += 1
+            elif char == "!":
+                self.next = Token("NOT", char)
+            elif char == ">":
+                self.next = Token("GREATER", char)
+            elif char == "<":
+                self.next = Token("LESS", char)
             else:
                 raise ValueError("Caractere inválido")
             
