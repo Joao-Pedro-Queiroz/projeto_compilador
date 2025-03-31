@@ -242,61 +242,6 @@ class Parser:
     def __init__(self, tokenizer: Tokenizer):
         self.tokenizer = tokenizer
 
-    
-    def parseBlock(self):
-        statements = []
-
-        if self.tokenizer.next.type == "LBRACE":
-            self.tokenizer.selectNext()
-
-            while self.tokenizer.next.type != "RBRACE":
-                if self.tokenizer.next.type == "EOF":
-                     raise ValueError("Erro de sintaxe: bloco não fechado corretamente")
-
-                statements.append(self.parseStatement())
-
-            self.tokenizer.selectNext()
-        else:
-            return NoOp()
-
-        return Block(statements)
-    
-
-    def parseStatement(self):
-        if self.tokenizer.next.type == "SEMI":
-            self.tokenizer.selectNext() 
-            return NoOp()
-    
-        if self.tokenizer.next.type == "IDENTIFIER":
-            identifier = Identifier(self.tokenizer.next.value)
-            self.tokenizer.selectNext()
-
-            if self.tokenizer.next.type == "ASSIGN":
-                self.tokenizer.selectNext()
-                expr = self.parseExpression()
-
-                if not isinstance(identifier, Identifier):
-                    raise ValueError("Erro de sintaxe: o lado esquerdo da atribuição deve ser um identificador.")
-
-                if self.tokenizer.next.type != "SEMI":
-                    raise ValueError("Ponto e vírgula esperado")
-                
-                self.tokenizer.selectNext()
-                return Assignment(identifier, expr)
-        elif self.tokenizer.next.type == "PRINT":
-            self.tokenizer.selectNext()
-            expr = self.parseExpression()
-
-            if self.tokenizer.next.type != "SEMI":
-                raise ValueError("Ponto e vírgula esperado")
-
-            self.tokenizer.selectNext()
-            return Print(expr)
-        elif self.tokenizer.next.type == "INTEGER":
-            raise ValueError(f"Erro de sintaxe: números não podem ser usados como identificadores ({self.tokenizer.next.value})")
-
-        return NoOp()
-
 
     def parseFactor(self):
         token = self.tokenizer.next
@@ -400,6 +345,61 @@ class Parser:
             left = BinOp(operador, left, right)
 
         return left
+    
+
+    def parseStatement(self):
+        if self.tokenizer.next.type == "SEMI":
+            self.tokenizer.selectNext() 
+            return NoOp()
+    
+        if self.tokenizer.next.type == "IDENTIFIER":
+            identifier = Identifier(self.tokenizer.next.value)
+            self.tokenizer.selectNext()
+
+            if self.tokenizer.next.type == "ASSIGN":
+                self.tokenizer.selectNext()
+                expr = self.parseExpression()
+
+                if not isinstance(identifier, Identifier):
+                    raise ValueError("Erro de sintaxe: o lado esquerdo da atribuição deve ser um identificador.")
+
+                if self.tokenizer.next.type != "SEMI":
+                    raise ValueError("Ponto e vírgula esperado")
+                
+                self.tokenizer.selectNext()
+                return Assignment(identifier, expr)
+        elif self.tokenizer.next.type == "PRINT":
+            self.tokenizer.selectNext()
+            expr = self.parseExpression()
+
+            if self.tokenizer.next.type != "SEMI":
+                raise ValueError("Ponto e vírgula esperado")
+
+            self.tokenizer.selectNext()
+            return Print(expr)
+        elif self.tokenizer.next.type == "INTEGER":
+            raise ValueError(f"Erro de sintaxe: números não podem ser usados como identificadores ({self.tokenizer.next.value})")
+
+        return NoOp()
+    
+
+    def parseBlock(self):
+        statements = []
+
+        if self.tokenizer.next.type == "LBRACE":
+            self.tokenizer.selectNext()
+
+            while self.tokenizer.next.type != "RBRACE":
+                if self.tokenizer.next.type == "EOF":
+                     raise ValueError("Erro de sintaxe: bloco não fechado corretamente")
+
+                statements.append(self.parseStatement())
+
+            self.tokenizer.selectNext()
+        else:
+            return NoOp()
+
+        return Block(statements)
     
 
     @staticmethod
