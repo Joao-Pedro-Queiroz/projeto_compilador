@@ -266,6 +266,7 @@ class Tokenizer:
             elif char == "<":
                 self.next = Token("LESS", char)
             else:
+                print(char)
                 raise ValueError("Caractere inválido")
             
             self.position += 1
@@ -298,7 +299,7 @@ class Parser:
             return UnOp("!", self.parseFactor())
         elif token.type == "LPAREN":
             self.tokenizer.selectNext()
-            result = self.parseExpression()
+            result = self.parseOrExpression()
 
             if self.tokenizer.next.type != "RPAREN":
                 raise ValueError("Parênteses desbalanceados")
@@ -408,7 +409,7 @@ class Parser:
 
             if self.tokenizer.next.type == "ASSIGN":
                 self.tokenizer.selectNext()
-                expr = self.parseExpression()
+                expr = self.parseOrExpression()
 
                 if self.tokenizer.next.type != "SEMI":
                     raise ValueError("Ponto e vírgula esperado")
