@@ -450,12 +450,21 @@ class Parser:
                 raise ValueError("Parênteses fechando esperados após condição de 'if'")
             
             self.tokenizer.selectNext()
-            then_branch = self.parseBlock()
+
+            if self.tokenizer.next.type == "LBRACE":
+                then_branch = self.parseBlock()
+            else:
+                then_branch = self.parseStatement() 
+    
             else_branch = None
             
             if self.tokenizer.next.type == "ELSE":
                 self.tokenizer.selectNext()
-                else_branch = self.parseBlock()
+                
+                if self.tokenizer.next.type == "LBRACE":
+                    else_branch = self.parseBlock()
+                else:
+                    else_branch = self.parseStatement()
             
             return If(condition, then_branch, else_branch)
         elif self.tokenizer.next.type == "WHILE":
