@@ -121,6 +121,29 @@ class Print(Node):
         value = self.children[0].Evaluate(symbol_table)
         print(value)
         return value
+    
+class If(Node):
+    def __init__(self, condition, then_branch, else_branch=None):
+        super().__init__("if", [condition, then_branch] + ([else_branch] if else_branch else []))
+
+    def Evaluate(self, symbol_table):
+        condition_value = self.children[0].Evaluate(symbol_table)
+        
+        if condition_value:
+            return self.children[1].Evaluate(symbol_table)
+        elif len(self.children) > 2:
+            return self.children[2].Evaluate(symbol_table)
+        
+        return 0
+    
+
+class While(Node):
+    def __init__(self, condition, block):
+        super().__init__("while", [condition, block])
+
+    def Evaluate(self, symbol_table):
+        while self.children[0].Evaluate(symbol_table):
+            self.children[1].Evaluate(symbol_table)
 
 
 class Block(Node):
@@ -159,7 +182,7 @@ class Tokenizer:
         self.source = source
         self.position = position
         self.next = next
-        self.keywords = {"print": "PRINT"}
+        self.keywords = {"print": "PRINT", "if": "IF", "else": "ELSE", "while": "WHILE"}
     
     def selectNext(self):
         while self.position < len(self.source) and (self.source[self.position] == ' ' or self.source[self.position] == '\n'):
@@ -321,6 +344,7 @@ class Parser:
 
         return left
     
+
     def parseAndExpression(self):
         left = self.parseRelationalExpression()
 
@@ -334,6 +358,7 @@ class Parser:
 
         return left
     
+
     def parseOrExpression(self):
         left = self.parseAndExpression()
 
@@ -344,7 +369,7 @@ class Parser:
 
             left = BinOp(operador, left, right)
 
-        return left
+        return left      
     
 
     def parseStatement(self):
@@ -360,9 +385,6 @@ class Parser:
                 self.tokenizer.selectNext()
                 expr = self.parseExpression()
 
-                if not isinstance(identifier, Identifier):
-                    raise ValueError("Erro de sintaxe: o lado esquerdo da atribuição deve ser um identificador.")
-
                 if self.tokenizer.next.type != "SEMI":
                     raise ValueError("Ponto e vírgula esperado")
                 
@@ -377,6 +399,43 @@ class Parser:
 
             self.tokenizer.selectNext()
             return Print(expr)
+        elif self.tokenizer.next.type == "IF":
+            self.tokenizer.selectNext()
+            
+            if self.tokenizer.next.type != "LPAREN":
+                raise ValueError("Parênteses esperados após 'if'")
+            
+            self.tokenizer.selectNext()
+            condition = self.parseOrExpression()
+            
+            if self.tokenizer.next.type != "RPAREN":
+                raise ValueError("Parênteses fechando esperados após condição de 'if'")
+            
+            self.tokenizer.selectNext()
+            then_branch = self.parseBlock()
+            else_branch = None
+            
+            if self.tokenizer.next.type == "ELSE":
+                self.tokenizer.selectNext()
+                else_branch = self.parseBlock()
+            
+            return If(condition, then_branch, else_branch)
+        elif self.tokenizer.next.type == "WHILE":
+            self.tokenizer.selectNext()
+            
+            if self.tokenizer.next.type != "LPAREN":
+                raise ValueError("Parênteses esperados após 'while'")
+            
+            self.tokenizer.selectNext()
+            condition = self.parseOrExpression()
+            
+            if self.tokenizer.next.type != "RPAREN":
+                raise ValueError("Parênteses fechando esperados após condição de 'while'")
+            
+            self.tokenizer.selectNext()
+            block = self.parseBlock()
+            
+            return While(condition, block)
         elif self.tokenizer.next.type == "INTEGER":
             raise ValueError(f"Erro de sintaxe: números não podem ser usados como identificadores ({self.tokenizer.next.value})")
 
