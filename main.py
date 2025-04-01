@@ -305,6 +305,19 @@ class Parser:
             
             self.tokenizer.selectNext()
             return result
+        elif self.tokenizer.next.type == "READ":
+            self.tokenizer.selectNext()
+            
+            if self.tokenizer.next.type != "LPAREN":
+                raise ValueError("Parênteses esperados após 'reader'")
+            
+            self.tokenizer.selectNext()
+            
+            if self.tokenizer.next.type != "RPAREN":
+                raise ValueError("Parênteses de fechamento esperados após 'reader()'")
+            
+            self.tokenizer.selectNext()
+            return Read()
         else:
             raise ValueError(f"Token inesperado: {token.type}")
 
@@ -404,7 +417,17 @@ class Parser:
                 return Assignment(identifier, expr)
         elif self.tokenizer.next.type == "PRINT":
             self.tokenizer.selectNext()
-            expr = self.parseExpression()
+            
+            if self.tokenizer.next.type != "LPAREN":
+                raise ValueError("Parênteses esperados após 'print'")
+            
+            self.tokenizer.selectNext()
+            condition = self.parseOrExpression()
+            
+            if self.tokenizer.next.type != "RPAREN":
+                raise ValueError("Parênteses fechando esperados após condição de 'print'")
+            
+            self.tokenizer.selectNext()
 
             if self.tokenizer.next.type != "SEMI":
                 raise ValueError("Ponto e vírgula esperado")
@@ -430,6 +453,8 @@ class Parser:
             if self.tokenizer.next.type == "ELSE":
                 self.tokenizer.selectNext()
                 else_branch = self.parseBlock()
+            elif self.tokenizer.next.type == "LBRACE":
+                return ValueError("'Else' esperados após bloco de 'if'")
             
             return If(condition, then_branch, else_branch)
         elif self.tokenizer.next.type == "WHILE":
@@ -448,19 +473,6 @@ class Parser:
             block = self.parseBlock()
             
             return While(condition, block)
-        elif self.tokenizer.next.type == "READ":
-            self.tokenizer.selectNext()
-            
-            if self.tokenizer.next.type != "LPAREN":
-                raise ValueError("Parênteses esperados após 'reader'")
-            
-            self.tokenizer.selectNext()
-            
-            if self.tokenizer.next.type != "RPAREN":
-                raise ValueError("Parênteses de fechamento esperados após 'reader()'")
-            
-            self.tokenizer.selectNext()
-            return Read()
         elif self.tokenizer.next.type == "INTEGER":
             raise ValueError(f"Erro de sintaxe: números não podem ser usados como identificadores ({self.tokenizer.next.value})")
 
