@@ -197,7 +197,7 @@ class Tokenizer:
         self.keywords = {"print": "PRINT", "if": "IF", "else": "ELSE", "while": "WHILE", "reader": "READ"}
     
     def selectNext(self):
-        while self.position < len(self.source) and (self.source[self.position] == ' ' or self.source[self.position] == '\n'):
+        while self.position < len(self.source) and self.source[self.position] in {' ', '\n', '\r', '\t'}:
             self.position += 1
 
         if self.position < len(self.source):
@@ -266,7 +266,6 @@ class Tokenizer:
             elif char == "<":
                 self.next = Token("LESS", char)
             else:
-                print(char)
                 raise ValueError("Caractere inválido")
             
             self.position += 1
@@ -366,7 +365,12 @@ class Parser:
 
             right = self.parseExpression()
 
-            left = BinOp(operador, left, right)
+            if operador == "EQUAL":
+                left = BinOp("==", left, right)
+            elif operador == "GREATER":
+                left = BinOp(">", left, right)
+            elif operador == "LESS":
+                left = BinOp("<", left, right)
 
         return left
     
@@ -375,12 +379,11 @@ class Parser:
         left = self.parseRelationalExpression()
 
         while self.tokenizer.next.type == "AND":
-            operador = self.tokenizer.next.type
             self.tokenizer.selectNext()
 
             right = self.parseRelationalExpression()
 
-            left = BinOp(operador, left, right)
+            left = BinOp("&&", left, right)
 
         return left
     
@@ -389,11 +392,10 @@ class Parser:
         left = self.parseAndExpression()
 
         while self.tokenizer.next.type == "OR":
-            operador = self.tokenizer.next.type
             self.tokenizer.selectNext()
             right = self.parseAndExpression()
 
-            left = BinOp(operador, left, right)
+            left = BinOp("||", left, right)
 
         return left      
     
