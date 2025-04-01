@@ -422,7 +422,7 @@ class Parser:
                 raise ValueError("Parênteses esperados após 'print'")
             
             self.tokenizer.selectNext()
-            condition = self.parseOrExpression()
+            expr = self.parseOrExpression()
             
             if self.tokenizer.next.type != "RPAREN":
                 raise ValueError("Parênteses fechando esperados após condição de 'print'")
