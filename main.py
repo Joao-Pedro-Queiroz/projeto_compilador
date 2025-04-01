@@ -156,6 +156,18 @@ class Block(Node):
             statement.Evaluate(symbol_table)
 
 
+class Read(Node):
+    def __init__(self):
+        super().__init__("read", [])
+
+    def Evaluate(self, symbol_table):
+        value = input()  # Lê a entrada do usuário
+        try:
+            return int(value)  # Converte para inteiro
+        except ValueError:
+            raise ValueError(f"Entrada inválida: {value}. Esperado um número inteiro.")
+
+
 class NoOp(Node):
     def __init__(self):
         super().__init__(None, [])
@@ -182,7 +194,7 @@ class Tokenizer:
         self.source = source
         self.position = position
         self.next = next
-        self.keywords = {"print": "PRINT", "if": "IF", "else": "ELSE", "while": "WHILE"}
+        self.keywords = {"print": "PRINT", "if": "IF", "else": "ELSE", "while": "WHILE", "reader": "READ"}
     
     def selectNext(self):
         while self.position < len(self.source) and (self.source[self.position] == ' ' or self.source[self.position] == '\n'):
@@ -436,6 +448,19 @@ class Parser:
             block = self.parseBlock()
             
             return While(condition, block)
+        elif self.tokenizer.next.type == "READ":
+            self.tokenizer.selectNext()
+            
+            if self.tokenizer.next.type != "LPAREN":
+                raise ValueError("Parênteses esperados após 'reader'")
+            
+            self.tokenizer.selectNext()
+            
+            if self.tokenizer.next.type != "RPAREN":
+                raise ValueError("Parênteses de fechamento esperados após 'reader()'")
+            
+            self.tokenizer.selectNext()
+            return Read()
         elif self.tokenizer.next.type == "INTEGER":
             raise ValueError(f"Erro de sintaxe: números não podem ser usados como identificadores ({self.tokenizer.next.value})")
 
