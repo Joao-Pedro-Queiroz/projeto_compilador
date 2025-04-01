@@ -20,3 +20,7 @@
 
 ![Diagrama sintático 2.1](./img/diagrama_sintático_v2_1.png)
 ![EBNF 2.1](./img/EBNF_v2_1.png)
+
+# Diagrama sintático e EBNF da versão 2.2
+
+![Diagrama sintático 2.1](./img/diagrama_sintático_v2_2.png)
