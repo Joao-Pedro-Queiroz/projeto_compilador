@@ -453,8 +453,6 @@ class Parser:
             if self.tokenizer.next.type == "ELSE":
                 self.tokenizer.selectNext()
                 else_branch = self.parseBlock()
-            elif self.tokenizer.next.type == "LBRACE":
-                return ValueError("'Else' esperados após bloco de 'if'")
             
             return If(condition, then_branch, else_branch)
         elif self.tokenizer.next.type == "WHILE":
@@ -473,8 +471,8 @@ class Parser:
             block = self.parseBlock()
             
             return While(condition, block)
-        elif self.tokenizer.next.type == "INTEGER":
-            raise ValueError(f"Erro de sintaxe: números não podem ser usados como identificadores ({self.tokenizer.next.value})")
+        else:
+            raise ValueError(f"Token inesperado: {self.tokenizer.next.type}")
 
         return NoOp()
     
