@@ -454,17 +454,17 @@ class Parser:
             if self.tokenizer.next.type == "LBRACE":
                 then_branch = self.parseBlock()
             else:
-                then_branch = self.parseStatement() 
+                raise ValueError("Chave esperada após condição de 'if'")
     
             else_branch = None
             
             if self.tokenizer.next.type == "ELSE":
                 self.tokenizer.selectNext()
-                
+
                 if self.tokenizer.next.type == "LBRACE":
                     else_branch = self.parseBlock()
                 else:
-                    else_branch = self.parseStatement()
+                    raise ValueError("Chave esperada após 'else'")
             
             return If(condition, then_branch, else_branch)
         elif self.tokenizer.next.type == "WHILE":
