@@ -164,10 +164,10 @@ class VarDeC(Node):
 
 
     def Evaluate(self, symbol_table):
-        symbol_table.declare(self.children[0].value, self.children[1].value)
+        symbol_table.declare(self.children[0].value, self.children[1])
 
         if len(self.children) == 3:
-            if self.children[1].value != self.children[2].Evaluate(symbol_table)[1]:
+            if self.children[1] != self.children[2].Evaluate(symbol_table)[1]:
                 raise TypeError(f"Tipo de variável '{self.children[0].value}' não corresponde ao tipo da expressão.")
             
             value, type = self.children[2].Evaluate(symbol_table)
