@@ -195,7 +195,10 @@ class Print(Node):
 
     def Evaluate(self, symbol_table):
         value = self.children[0].Evaluate(symbol_table)
-        print(value[0])
+        if value[1] == "bool":
+            print("true" if value[0] else "false")
+        else:
+            print(value[0])
         return (value, None)
     
 class If(Node):
