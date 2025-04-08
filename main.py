@@ -285,7 +285,7 @@ class Tokenizer:
         self.position = position
         self.next = next
         self.keywords = {
-            "print": "PRINT","printf": "PRINT" "if": "IF", "else": "ELSE", "while": "WHILE", 
+            "print": "PRINT", "printf": "PRINT", "if": "IF", "else": "ELSE", "while": "WHILE", 
             "reader": "READ","scanf": "READ", "var": "VAR",
             "i32": "TYPE_I32", "bool": "TYPE_BOOL", "str": "TYPE_STR",
             "true": "BOOL", "false": "BOOL"
