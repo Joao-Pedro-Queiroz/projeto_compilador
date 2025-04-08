@@ -164,7 +164,7 @@ class VarDeC(Node):
 
 
     def Evaluate(self, symbol_table):
-        symbol_table.declare(self.children[0].value, self.children[1].valu)
+        symbol_table.declare(self.children[0].value, self.children[1].value)
 
         if len(self.children) == 3:
             if self.children[1].value != self.children[2].Evaluate(symbol_table)[1]:
@@ -402,6 +402,12 @@ class Parser:
         elif token.type == "IDENTIFIER":
             self.tokenizer.selectNext()
             return Identifier(token.value)
+        elif token.type == "STRING":
+            self.tokenizer.selectNext()
+            return StrVal(token.value)
+        elif token.type == "BOOL":
+            self.tokenizer.selectNext()
+            return BoolVal(token.value)
         elif token.type == "PLUS":
             self.tokenizer.selectNext()
             return UnOp("+", self.parseFactor())
@@ -457,7 +463,7 @@ class Parser:
     def parseExpression(self):
         left = self.parseTerm()
 
-        while self.tokenizer.next.type in ("PLUS", "MINUS"):
+        while self.tokenizer.next.type in ("PLUS", "MINUS", "CONCAT"):
             operador = self.tokenizer.next.type
             self.tokenizer.selectNext()
 
@@ -467,6 +473,8 @@ class Parser:
                 left = BinOp("+", left, right)
             elif operador == "MINUS":
                 left = BinOp("-", left, right)
+            elif operador == "CONCAT":
+                left = BinOp("++", left, right)
 
         return left
     
@@ -552,6 +560,35 @@ class Parser:
 
             self.tokenizer.selectNext()
             return Print(expr)
+        elif self.tokenizer.next.type == "VAR":
+            self.tokenizer.selectNext()
+
+            if self.tokenizer.next.type != "IDENTIFIER":
+                raise ValueError("Identificador esperado após 'var'")
+            
+            identifier = Identifier(self.tokenizer.next.value)
+            self.tokenizer.selectNext()
+
+            if self.tokenizer.next.type != "COLON":
+                raise ValueError("Dois pontos esperados após identificador")
+            
+            self.tokenizer.selectNext()
+            var_type = self.tokenizer.next.value
+
+            if var_type not in {"i32", "bool", "str"}:
+                raise ValueError(f"Tipo inválido: {var_type}. Esperado 'i32', 'bool' ou 'str'")
+            
+            self.tokenizer.selectNext()
+            expression = None
+
+            if self.tokenizer.next.type == "ASSIGN":
+                self.tokenizer.selectNext()
+                expression = self.parseOrExpression()
+
+            if self.tokenizer.next.type != "SEMI":
+                raise ValueError("Ponto e vírgula esperado")
+            
+            return VarDeC(identifier, var_type, expression)
         elif self.tokenizer.next.type == "IF":
             self.tokenizer.selectNext()
             
@@ -565,21 +602,13 @@ class Parser:
                 raise ValueError("Parênteses fechando esperados após condição de 'if'")
             
             self.tokenizer.selectNext()
-
-            if self.tokenizer.next.type == "LBRACE":
-                then_branch = self.parseBlock()
-            else:
-                raise ValueError("Chave esperada após condição de 'if'")
+            then_branch = self.parseBlock()
     
             else_branch = None
             
             if self.tokenizer.next.type == "ELSE":
                 self.tokenizer.selectNext()
-
-                if self.tokenizer.next.type == "LBRACE":
-                    else_branch = self.parseBlock()
-                else:
-                    raise ValueError("Chave esperada após 'else'")
+                else_branch = self.parseBlock()
             
             return If(condition, then_branch, else_branch)
         elif self.tokenizer.next.type == "WHILE":
