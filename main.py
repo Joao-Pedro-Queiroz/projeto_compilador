@@ -96,9 +96,9 @@ class BinOp(Node):
         elif self.value == "++":
             if left_type == "bool" and right_type == "bool":
                 return (str("true" if left_value else "false") + str("true" if right_value else "false"), "str")
-            elif left_type == "bool" and right_type != "str":
+            elif left_type == "bool" and right_type != "bool":
                 return (str("true" if left_value else "false") + str(right_value), "str")
-            elif right_type == "bool" and left_type != "str":
+            elif right_type == "bool" and left_type != "bool":
                 return (str(left_value) + str("true" if right_value else "false"), "str")
             else:
                 return (str(left_value) + str(right_value), "str")
