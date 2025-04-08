@@ -94,7 +94,14 @@ class BinOp(Node):
                 return (1 if left_value < right_value else 0, "bool")
         
         elif self.value == "++":
-            return (str(left_value) + str(right_value), "str")
+            if left_type == "bool" or right_type == "bool":
+                return (str("true" if left_value else "false") + str("true" if right_value else "false"), "str")
+            elif left_type == "bool" or right_type != "str":
+                return (str("true" if left_value else "false") + str(right_value), "str")
+            elif right_type == "bool" or left_type != "str":
+                return (str(left_value) + str("true" if right_value else "false"), "str")
+            else:
+                return (str(left_value) + str(right_value), "str")
 
         else:
             raise ValueError(f"Operador binário desconhecido: {self.value}")
