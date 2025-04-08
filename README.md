@@ -23,4 +23,8 @@
 
 # Diagrama sintático e EBNF da versão 2.2
 
-![Diagrama sintático 2.1](./img/diagrama_sintático_v2_2.png)
+![Diagrama sintático 2.2](./img/diagrama_sintático_v2_2.png)
+
+# Diagrama sintático e EBNF da versão 2.3
+
+![Diagrama sintático 2.3](./img/diagrama_sintático_v2_3.png)
