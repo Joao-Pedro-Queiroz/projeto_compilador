@@ -876,11 +876,28 @@ class Parser:
             raise ValueError("Erro: expressão não consumiu todos os tokens. Verifique a sintaxe.")
         
         return root
+
+    @staticmethod
+    def geracodigo(code, filename):
+        tokenizer = Tokenizer(code, 0, None)
+        tokenizer.selectNext()
+        parser = Parser(tokenizer)
+        root = parser.parseBlock()
+
+        if tokenizer.next.type != "EOF":
+            raise ValueError("Erro: expressão não consumiu todos os tokens. Verifique a sintaxe.")
+
+        symbol_table = SymbolTable()
+        instructions = root.Generate(symbol_table)
+        code_generator = Code()
+
+        code_generator.append(instructions)
+        code_generator.dump(filename)
     
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        raise ValueError("Uso incorreto do programa.\nUse (exemplo): python main.py '1+2-3'")
+        raise ValueError("Uso incorreto do programa.\nUse (exemplo): python main.py 'arquivo.zig'")
 
     arquivo = sys.argv[1]
 
@@ -891,7 +908,4 @@ if __name__ == "__main__":
         expressao = file.read()
 
     expressao = PrePro.filter(expressao)
-    root = Parser.run(expressao)
-    
-    symbol_table = SymbolTable()
-    root.Evaluate(symbol_table)
+    Parser.geracodigo(expressao, arquivo)
