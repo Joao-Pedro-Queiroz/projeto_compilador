@@ -1,6 +1,7 @@
 import sys
 import re
 from abc import ABC, abstractmethod
+import os
 
 
 class Code:
@@ -8,15 +9,49 @@ class Code:
         self.instructions = []
 
     def append(self, instruction):
-        self.instructions.append(instruction)
+        if isinstance(instruction, list):
+            self.instructions.extend(instruction)
+        else:
+            self.instructions.append(instruction)
 
-    def filename(self):
-        return "output.zig"
+    def dump(self, input_filename="output.zig"):
+        output_name = os.path.splitext(input_filename)[0] + ".asm"
+        
+        with open(output_name, "w") as f:
+            f.write("section .data\n")
+            f.write('format_out db "%d", 10, 0\n')
+            f.write('format_in db "%d", 0\n')
+            f.write("scan_int dd 0\n\n")
+
+            f.write("section .text\n")
+            f.write("global main\n")
+            f.write("extern printf, scanf\n\n")
+            f.write("main:\n")
+            f.write("push ebp\n")
+            f.write("mov ebp, esp\n")
+
+            for instr in self.instructions:
+                f.write(instr + "\n")
+
+            f.write("mov esp, ebp\n")
+            f.write("pop ebp\n")
+            f.write("mov eax, 0\n")
+            f.write("ret\n")
 
 
 class SymbolTable:
     def __init__(self):
         self.table = {}
+        self.tableoffset = {}
+        self.offset = 0
+
+    def allocate(self, name, var_type):
+        self.offset += 4
+        self.tableoffset[name] = {"offset": self.offset, "type": var_type}
+        return self.offset
+
+    def get_offset(self, name):
+        return self.tableoffset[name]["offset"]
 
     def declare(self, name, var_type):
         if name in self.table:
@@ -335,6 +370,28 @@ class If(Node):
             return self.children[1].Evaluate(symbol_table)
         elif len(self.children) > 2:
             return self.children[2].Evaluate(symbol_table)
+        
+    def Generate(self, symbol_table):
+        if_id = self.id
+        else_label = f"else_{if_id}"
+        end_label = f"endif_{if_id}"
+
+        code = self.children[0].Generate(symbol_table)
+        code += ["cmp eax, 0"]
+
+        if len(self.children) == 3:
+            code.append(f"je {else_label}")
+            code += self.children[1].Generate(symbol_table)
+            code.append(f"jmp {end_label}")
+            code.append(f"{else_label}:")
+            code += self.children[2].Generate(symbol_table)
+            code.append(f"{end_label}:")
+        else:
+            code.append(f"je {end_label}")
+            code += self.children[1].Generate(symbol_table)
+            code.append(f"{end_label}:")
+
+        return code
     
 
 class While(Node):
@@ -354,6 +411,19 @@ class While(Node):
             condition_value, _ = self.children[0].Evaluate(symbol_table)
 
         return result
+    
+    def Generate(self, symbol_table):
+        loop_id = self.id
+        start_label = f"loop_{loop_id}"
+        end_label = f"exit_{loop_id}"
+
+        code = [f"{start_label}:"]
+        code += self.children[0].Generate(symbol_table)
+        code += ["cmp eax, 0", f"je {end_label}"]
+        code += self.children[1].Generate(symbol_table)
+        code.append(f"jmp {start_label}")
+        code.append(f"{end_label}:")
+        return code
 
 
 class Block(Node):
@@ -366,6 +436,14 @@ class Block(Node):
             statement.Evaluate(symbol_table)
 
         return (None, None)
+    
+    def Generate(self, symbol_table):
+        code = []
+
+        for stmt in self.children:
+            code += stmt.Generate(symbol_table)
+
+        return code
 
 
 class Read(Node):
@@ -379,6 +457,15 @@ class Read(Node):
             return (int(value), "i32")
         except ValueError:
             raise ValueError(f"Entrada inválida: {value}. Esperado um número inteiro.")
+        
+    def Generate(self, symbol_table):
+        return [
+            "push scan_int",
+            "push format_in",
+            "call scanf",
+            "add esp, 8",
+            "mov eax, [scan_int]"
+        ]
 
 
 class NoOp(Node):
@@ -388,6 +475,9 @@ class NoOp(Node):
 
     def Evaluate(self, symbol_table):
         return (None, None)
+    
+    def Generate(self, symbol_table):
+        return []
 
 
 class PrePro:
