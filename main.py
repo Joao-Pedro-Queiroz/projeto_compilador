@@ -3,6 +3,17 @@ import re
 from abc import ABC, abstractmethod
 
 
+class Code:
+    def __init__(self):
+        self.instructions = []
+
+    def append(self, instruction):
+        self.instructions.append(instruction)
+
+    def filename(self):
+        return "output.zig"
+
+
 class SymbolTable:
     def __init__(self):
         self.table = {}
@@ -38,13 +49,24 @@ class SymbolTable:
 
 
 class Node(ABC):
+    current_id = 0
+
+    @staticmethod
+    def newId():
+        Node.current_id += 1
+        return Node.current_id
+
     def __init__(self, value, children: list):
         self.value = value
         self.children = children
-
+        self.id = Node.newId()
 
     @abstractmethod
     def Evaluate(self, symbol_table):
+        pass
+
+    @abstractmethod
+    def Generate(self, symbol_table):
         pass
 
 
@@ -105,6 +127,40 @@ class BinOp(Node):
 
         else:
             raise ValueError(f"Operador binário desconhecido: {self.value}")
+        
+    def Generate(self, symbol_table):
+        code = []
+        code += self.children[1].Generate(symbol_table)  # right
+        code.append("push eax")
+        code += self.children[0].Generate(symbol_table)  # left
+        code.append("pop ecx")
+
+        if self.value == "+":
+            code.append("add eax, ecx")
+        elif self.value == "-":
+            code.append("sub eax, ecx")
+        elif self.value == "*":
+            code.append("imul eax, ecx")
+        elif self.value == "/":
+            code.append("mov edx, 0")
+            code.append("mov ebx, eax")
+            code.append("mov eax, ecx")
+            code.append("div ebx")  # eax = ecx / eax
+        elif self.value in ["==", "<", ">"]:
+            code.append("cmp ecx, eax")
+            code.append("mov eax, 0")
+            code.append("mov edx, 1")
+
+            if self.value == "==":
+                code.append("cmove eax, ecx")
+            elif self.value == "<":
+                code.append("cmovl eax, ecx")
+            elif self.value == ">":
+                code.append("cmovg eax, ecx")
+        else:
+            raise Exception("Operador binário não implementado")
+
+        return code
 
 
 class UnOp(Node):
@@ -129,6 +185,20 @@ class UnOp(Node):
         
         else:
             raise ValueError(f"Operador unário desconhecido: {self.value}")
+    
+    def Generate(self, symbol_table):
+        code = self.children[0].Generate(symbol_table)
+
+        if self.value == "-":
+            code.append("neg eax")
+        elif self.value == "!":
+            code.append("cmp eax, 0")
+            code.append("mov eax, 0")
+            code.append("mov ecx, 1")
+            code.append("cmove eax, ecx")
+
+        return code
+
 
 
 class IntVal(Node):
@@ -139,6 +209,9 @@ class IntVal(Node):
     def Evaluate(self, symbol_table):
          return (self.value, "i32")
     
+    def Generate(self, symbol_table):
+        return ["mov eax, " + str(self.value)]
+    
 
 class BoolVal(Node):
     def __init__(self, value):
@@ -146,6 +219,10 @@ class BoolVal(Node):
 
     def Evaluate(self, symbol_table):
         return (1 if self.value == "true" else 0, "bool")
+    
+    def Generate(self, symbol_table):
+        val = "1" if self.value == "true" else "0"
+        return [f"mov eax, {val}"]
 
 
 class StrVal(Node):
@@ -154,6 +231,9 @@ class StrVal(Node):
 
     def Evaluate(self, symbol_table):
         return (self.value, "str")
+    
+    def Generate(self, symbol_table):
+        raise NotImplementedError("Strings ainda não são suportadas em código Assembly.")
 
 
 class Identifier(Node):
@@ -163,6 +243,10 @@ class Identifier(Node):
 
     def Evaluate(self, symbol_table):
         return symbol_table.get(self.value)
+    
+    def Generate(self, symbol_table):
+        offset = symbol_table.get_offset(self.value)
+        return [f"mov eax, [ebp-{offset}]"]
     
 
 class VarDeC(Node):
@@ -182,6 +266,20 @@ class VarDeC(Node):
             return (value, type)
         
         return (None, None)
+    
+    def Generate(self, symbol_table):
+        identifier = self.children[0].value
+        type_ = self.children[1]
+        offset = symbol_table.allocate(identifier, type_)
+
+        code = [f"sub esp, 4 ; reserva espaço para {identifier}"]
+
+        if len(self.children) == 3:
+            expr_code = self.children[2].Generate(symbol_table)
+            code += expr_code
+            code.append(f"mov [ebp-{offset}], eax")
+
+        return code
 
 
 class Assignment(Node):
@@ -193,6 +291,12 @@ class Assignment(Node):
         value, type = self.children[1].Evaluate(symbol_table)
         symbol_table.set(self.children[0].value, (value, type))
         return (value, type)
+    
+    def Generate(self, symbol_table):
+        code = self.children[1].Generate(symbol_table)
+        offset = symbol_table.get_offset(self.children[0].value)
+        code.append(f"mov [ebp-{offset}], eax")
+        return code
 
 
 class Print(Node):
@@ -207,6 +311,15 @@ class Print(Node):
         else:
             print(value[0])
         return (value, None)
+    
+    def Generate(self, symbol_table):
+        code = self.children[0].Generate(symbol_table)
+        code.append("push eax")
+        code.append("push format_out")
+        code.append("call printf")
+        code.append("add esp, 8")
+        return code
+    
     
 class If(Node):
     def __init__(self, condition, then_branch, else_branch=None):
