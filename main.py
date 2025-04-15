@@ -180,7 +180,7 @@ class BinOp(Node):
             code.append("mov edx, 0")
             code.append("mov ebx, eax")
             code.append("mov eax, ecx")
-            code.append("div ebx")  # eax = ecx / eax
+            code.append("div ebx")
         elif self.value in ["==", "<", ">"]:
             code.append("cmp ecx, eax")
             code.append("mov eax, 0")
@@ -192,6 +192,26 @@ class BinOp(Node):
                 code.append("cmovl eax, ecx")
             elif self.value == ">":
                 code.append("cmovg eax, ecx")
+        elif self.value == "&&":
+            code.append("test eax, eax")
+            code.append("jz false_and")
+            code.append("test ecx, ecx")
+            code.append("jz false_and")
+            code.append("mov eax, 1")
+            code.append("jmp end_and")
+            code.append("false_and:")
+            code.append("mov eax, 0")
+            code.append("end_and:")
+        elif self.value == "||":
+            code.append("test eax, eax")
+            code.append("jnz true_or")
+            code.append("test ecx, ecx")
+            code.append("jnz true_or")
+            code.append("mov eax, 0")
+            code.append("jmp end_or")
+            code.append("true_or:")
+            code.append("mov eax, 1")
+            code.append("end_or:")
         else:
             raise Exception("Operador binário não implementado")
 
