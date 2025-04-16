@@ -19,27 +19,28 @@ class Code:
         
         with open(output_name, "w") as f:
             f.write("section .data\n")
-            f.write('format_out db "%d", 10, 0\n')
-            f.write('format_in db "%d", 0\n')
-            f.write("scan_int dd 0\n\n")
+            f.write('   format_out db "%d", 10, 0\n')
+            f.write('   format_in db "%d", 0\n')
+            f.write("   scan_int dd 0\n\n")
 
-            f.write("section .text\n")
-            f.write("extern printfn\n")
-            f.write("extern scanf\n\n")
-            f.write("extern _ExitProcess@4\n\n")
-            f.write("global _start\n\n")
+            f.write("section .text\n\n")
+            f.write("   extern printfn\n")
+            f.write("   extern scanf\n")
+            f.write("   extern _ExitProcess@4\n")
+            f.write("   global _start\n\n")
             f.write("_start:\n")
-            f.write("push ebp\n")
-            f.write("mov ebp, esp\n")
+            f.write("   push ebp\n")
+            f.write("   mov ebp, esp\n\n")
 
             for instr in self.instructions:
-                f.write(instr + "\n")
+                f.write("   " + instr + "\n")
 
-            f.write("mov esp, ebp\n")
-            f.write("pop ebp\n\n")
-            f.write("mov eax, 1\n")
-            f.write("xor ebx, ebx\n")
-            f.write("int 0x80\n")
+            f.write("\n")
+            f.write("   mov esp, ebp\n")
+            f.write("   pop ebp\n\n")
+            f.write("   mov eax, 1\n")
+            f.write("   xor ebx, ebx\n")
+            f.write("   int 0x80\n")
 
 
 class SymbolTable:
