@@ -8,9 +8,9 @@ section .text
    extern printf
    extern scanf
    extern _ExitProcess@4
-   global main
+   global _start
 
-main:
+_start:
    push ebp
    mov ebp, esp
 
