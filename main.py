@@ -24,9 +24,11 @@ class Code:
             f.write("scan_int dd 0\n\n")
 
             f.write("section .text\n")
-            f.write("global main\n")
-            f.write("extern printf, scanf\n\n")
-            f.write("main:\n")
+            f.write("extern printfn\n")
+            f.write("extern scanf\n\n")
+            f.write("extern _ExitProcess@4\n\n")
+            f.write("global _start\n\n")
+            f.write("_start:\n")
             f.write("push ebp\n")
             f.write("mov ebp, esp\n")
 
@@ -34,9 +36,10 @@ class Code:
                 f.write(instr + "\n")
 
             f.write("mov esp, ebp\n")
-            f.write("pop ebp\n")
-            f.write("mov eax, 0\n")
-            f.write("ret\n")
+            f.write("pop ebp\n\n")
+            f.write("mov eax, 1\n")
+            f.write("xor ebx, ebx\n")
+            f.write("int 0x80\n")
 
 
 class SymbolTable:
