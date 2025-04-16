@@ -186,9 +186,9 @@ class BinOp(Node):
             code.append("mov eax, ecx")
             code.append("div ebx")
         elif self.value in ["==", "<", ">"]:
-            code.append("cmp ecx, eax")
+            code.append("cmp eax, ecx")
             code.append("mov eax, 0")
-            code.append("mov edx, 1")
+            code.append("mov ecx, 1")
 
             if self.value == "==":
                 code.append("cmove eax, ecx")
@@ -198,9 +198,9 @@ class BinOp(Node):
                 code.append("cmovg eax, ecx")
         elif self.value == "&&":
             code.append("test eax, eax")
-            code.append("jz false_and")
+            code.append("je false_and")
             code.append("test ecx, ecx")
-            code.append("jz false_and")
+            code.append("je false_and")
             code.append("mov eax, 1")
             code.append("jmp end_and")
             code.append("false_and:")
@@ -208,9 +208,9 @@ class BinOp(Node):
             code.append("end_and:")
         elif self.value == "||":
             code.append("test eax, eax")
-            code.append("jnz true_or")
+            code.append("jne true_or")
             code.append("test ecx, ecx")
-            code.append("jnz true_or")
+            code.append("jne true_or")
             code.append("mov eax, 0")
             code.append("jmp end_or")
             code.append("true_or:")
