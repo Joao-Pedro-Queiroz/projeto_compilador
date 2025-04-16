@@ -169,24 +169,24 @@ class BinOp(Node):
         
     def Generate(self, symbol_table):
         code = []
-        code += self.children[0].Generate(symbol_table)  # right
+        code += self.children[1].Generate(symbol_table)  # right
         code.append("push eax")
-        code += self.children[1].Generate(symbol_table)  # left
+        code += self.children[0].Generate(symbol_table)  # left
         code.append("pop ecx")
 
         if self.value == "+":
-            code.append("add ecx, eax")
+            code.append("add eax, ecx")
         elif self.value == "-":
-            code.append("sub ecx, eax")
+            code.append("sub eax, ecx")
         elif self.value == "*":
-            code.append("imul ecx, eax")
+            code.append("imul eax, ecx")
         elif self.value == "/":
             code.append("mov edx, 0")
             code.append("mov ebx, eax")
             code.append("mov eax, ecx")
             code.append("div ebx")
         elif self.value in ["==", "<", ">"]:
-            code.append("cmp ecx, eax")
+            code.append("cmp eax, ecx")
             code.append("mov eax, 0")
             code.append("mov ecx, 1")
 
