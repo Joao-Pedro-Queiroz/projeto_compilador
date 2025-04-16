@@ -186,7 +186,7 @@ class BinOp(Node):
             code.append("mov eax, ecx")
             code.append("div ebx")
         elif self.value in ["==", "<", ">"]:
-            code.append("cmp eax, ecx")
+            code.append("cmp ecx, eax")
             code.append("mov eax, 0")
             code.append("mov ecx, 1")
 
