@@ -179,14 +179,12 @@ class BinOp(Node):
         elif self.value == "-":
             code.append("sub eax, ecx")
         elif self.value == "*":
-            code.append("imul eax, ecx")
+            code.append("imul ecx")
         elif self.value == "/":
             code.append("mov edx, 0")
-            code.append("mov ebx, eax")
-            code.append("mov eax, ecx")
-            code.append("div ebx")
+            code.append("idiv ecx")
         elif self.value in ["==", "<", ">"]:
-            code.append("cmp ecx, eax")
+            code.append("cmp eax, ecx")
             code.append("mov eax, 0")
             code.append("mov ecx, 1")
 
