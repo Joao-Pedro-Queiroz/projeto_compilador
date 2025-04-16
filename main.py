@@ -27,8 +27,8 @@ class Code:
             f.write("   extern printf\n")
             f.write("   extern scanf\n")
             f.write("   extern _ExitProcess@4\n")
-            f.write("   global _start\n\n")
-            f.write("_start:\n")
+            f.write("   global main\n\n")
+            f.write("main:\n")
             f.write("   push ebp\n")
             f.write("   mov ebp, esp\n\n")
 
