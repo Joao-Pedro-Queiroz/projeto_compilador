@@ -24,7 +24,7 @@ class Code:
             f.write("   scan_int dd 0\n\n")
 
             f.write("section .text\n\n")
-            f.write("   extern printfn\n")
+            f.write("   extern printf\n")
             f.write("   extern scanf\n")
             f.write("   extern _ExitProcess@4\n")
             f.write("   global _start\n\n")
