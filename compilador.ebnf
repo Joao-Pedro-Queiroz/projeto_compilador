@@ -1,0 +1,37 @@
+Block               = "{" { Statement } "}" ;
+
+Statement           = ";"                                  
+                     | identifier "=" OrExpression ";"
+                     | "print" "(" OrExpression ")" ";"
+                     | "var" identifier ":" type [ "=" OrExpression ] ";" 
+                     | "if" "(" OrExpression ")" Block [ "else" Block ]
+                     | "while" "(" OrExpression ")" Block ;
+
+OrExpression        = AndExpression { "||" AndExpression } ;
+
+AndExpression       = RelExpression { "&&" RelExpression } ;
+
+RelExpression       = Expression [ RelOp Expression ] ;
+
+Expression          = Term { ("+" | "-" | "++") Term } ;
+
+Term                = Factor { ("*" | "/") Factor } ;
+
+Factor              = integer
+                     | string
+                     | bool
+                     | identifier
+                     | "+" Factor
+                     | "-" Factor
+                     | "!" Factor
+                     | "(" OrExpression ")"
+                     | "reader" "(" ")" ;
+
+RelOp               = "==" | "<" | ">" ;
+
+type                = "i32" | "bool" | "str" ;
+
+identifier          = letter { letter | digit | "_" } ;
+integer             = digit { digit } ;
+string              = '"' { any_character_except_quote } '"' ;
+bool                = "true" | "false" ;
