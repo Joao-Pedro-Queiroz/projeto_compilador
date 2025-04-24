@@ -1113,7 +1113,7 @@ class Parser:
         tokenizer = Tokenizer(code, 0, None)
         tokenizer.selectNext()
 
-        if tokenizer.next.type != "EOF":
+        if tokenizer.next.type == "EOF":
             raise ValueError("Erro: expressão não consumiu todos os tokens. Verifique a sintaxe.")
 
         parser = Parser(tokenizer)
@@ -1128,7 +1128,7 @@ class Parser:
         tokenizer = Tokenizer(code, 0, None)
         tokenizer.selectNext()
 
-        if tokenizer.next.type != "EOF":
+        if tokenizer.next.type == "EOF":
             raise ValueError("Erro: expressão não consumiu todos os tokens. Verifique a sintaxe.")
 
         parser = Parser(tokenizer)
