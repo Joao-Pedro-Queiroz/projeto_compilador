@@ -520,11 +520,13 @@ class Tokenizer:
         self.position = position
         self.next = next
         self.keywords = {
-            "print": "PRINT", "printf": "PRINT", "if": "IF", "else": "ELSE", "while": "WHILE", 
-            "reader": "READ","scanf": "READ", "var": "VAR",
+            "print": "PRINT", "printf": "PRINT",
+            "if": "IF", "else": "ELSE", "while": "WHILE",
+            "reader": "READ", "scanf": "READ", "var": "VAR",
             "i32": "TYPE_I32", "bool": "TYPE_BOOL", "str": "TYPE_STR",
-            "true": "BOOL", "false": "BOOL"
-            }
+            "true": "BOOL", "false": "BOOL", "fn": "FUNC", "return": "RETURN",
+            "void": "TYPE_VOID"
+        }
     
     def selectNext(self):
         while self.position < len(self.source) and self.source[self.position] in {' ', '\n', '\r', '\t'}:
@@ -603,6 +605,8 @@ class Tokenizer:
                 self.next = Token("SEMI", char)
             elif char == ':': 
                 self.next = Token("COLON", char)
+            elif char == ",":
+                self.next = Token("COMMA", char)
             elif char == "&" and self.position + 1 < len(self.source) and self.source[self.position + 1] == "&":
                 self.next = Token("AND", char * 2)
                 self.position += 1
