@@ -649,6 +649,9 @@ class Tokenizer:
                     self.position += 1
 
                 token_type = self.keywords.get(ident, "IDENTIFIER")
+
+                if token_type != "IDENTIFIER" and ident[0].isupper():
+                    raise ValueError(f"Erro: Identificadores não podem começar com letra maiúscula: {ident}")
                 
                 self.next = Token(token_type, ident)
                 return
@@ -1027,6 +1030,8 @@ class Parser:
 
             if self.tokenizer.next.type != "SEMI":
                 raise ValueError("Ponto e vírgula esperado")
+
+            self.tokenizer.selectNext()
             
             return VarDeC(identifier, var_type, expression)
 
@@ -1095,10 +1100,8 @@ class Parser:
         while self.tokenizer.next.type != "EOF":
             if self.tokenizer.next.type == "VAR":
                 children.append(self.parseVarDec())
-                self.tokenizer.selectNext()
             elif self.tokenizer.next.type == "FUNC":
                 children.append(self.parseFuncDeclaration())
-                self.tokenizer.selectNext()
             else:
                 raise ValueError(f"Token inesperado no nível superior: {self.tokenizer.next.type}")
 
@@ -1109,6 +1112,10 @@ class Parser:
     def run(code):
         tokenizer = Tokenizer(code, 0, None)
         tokenizer.selectNext()
+
+        if tokenizer.next.type != "EOF":
+            raise ValueError("Erro: expressão não consumiu todos os tokens. Verifique a sintaxe.")
+
         parser = Parser(tokenizer)
         root = parser.parseProgram()
         main = FuncCall("main", [])
@@ -1120,6 +1127,10 @@ class Parser:
     def geracodigo(code, filename):
         tokenizer = Tokenizer(code, 0, None)
         tokenizer.selectNext()
+
+        if tokenizer.next.type != "EOF":
+            raise ValueError("Erro: expressão não consumiu todos os tokens. Verifique a sintaxe.")
+
         parser = Parser(tokenizer)
         root = parser.parseProgram()
         main = FuncCall("main", [])
