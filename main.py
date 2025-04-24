@@ -84,8 +84,6 @@ class SymbolTable:
             raise Exception(f"Variable '{name}' not declared.")
 
     def get(self, name):
-        print(name)
-        print(self.table)
         if name in self.table:
             entry = self.table[name]
 
