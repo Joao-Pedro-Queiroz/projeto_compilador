@@ -476,7 +476,7 @@ class Block(Node):
             ):
                 return result
 
-        return (None, None)
+        return (None, "void")
     
     def Generate(self, symbol_table):
         code = []
@@ -649,9 +649,6 @@ class Tokenizer:
                     self.position += 1
 
                 token_type = self.keywords.get(ident, "IDENTIFIER")
-
-                if ident[0].isupper():
-                    raise ValueError(f"Erro: Identificadores não podem começar com letra maiúscula: {ident}")
                 
                 self.next = Token(token_type, ident)
                 return
@@ -1081,11 +1078,6 @@ class Parser:
 
         self.tokenizer.selectNext()
 
-        if self.tokenizer.next.type != "COLON":
-            raise ValueError("Esperado ':' após parâmetros da função")
-
-        self.tokenizer.selectNext()
-
         return_type = self.tokenizer.next.value
         self.tokenizer.selectNext()
 
@@ -1120,12 +1112,9 @@ class Parser:
         parser = Parser(tokenizer)
         root = parser.parseProgram()
         main = FuncCall("main", [])
-
-        if tokenizer.next.type != "EOF":
-            raise ValueError("Erro: expressão não consumiu todos os tokens. Verifique a sintaxe.")
         
         symbol_table = SymbolTable()
-        instructions = main.Evaluate(symbol_table)
+        main.Evaluate(symbol_table)
 
     @staticmethod
     def geracodigo(code, filename):
@@ -1134,9 +1123,6 @@ class Parser:
         parser = Parser(tokenizer)
         root = parser.parseProgram()
         main = FuncCall("main", [])
-
-        if tokenizer.next.type != "EOF":
-            raise ValueError("Erro: expressão não consumiu todos os tokens. Verifique a sintaxe.")
 
         symbol_table = SymbolTable()
         instructions = root.Generate(symbol_table)
