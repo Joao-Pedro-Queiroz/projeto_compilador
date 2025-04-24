@@ -490,6 +490,39 @@ class Read(Node):
         ]
 
 
+class FuncDec(Node):
+    def __init__(self, name, parameters, body):
+        super().__init__(name, parameters + [body])
+
+    def Evaluate(self, symbol_table):
+        pass
+
+    def Generate(self, symbol_table):
+        return []
+
+
+class FuncCall(Node):
+    def __init__(self, name, arguments):
+        super().__init__(name, arguments)
+
+    def Evaluate(self, symbol_table):
+        pass
+
+    def Generate(self, symbol_table):
+        return []
+
+
+class Return(Node):
+    def __init__(self, expression):
+        super().__init__("return", [expression])
+
+    def Evaluate(self, symbol_table):
+        pass
+
+    def Generate(self, symbol_table):
+        return []
+
+
 class NoOp(Node):
     def __init__(self):
         super().__init__(None, [])
@@ -639,8 +672,26 @@ class Parser:
             self.tokenizer.selectNext()
             return IntVal(token.value)
         elif token.type == "IDENTIFIER":
+            identifier = Identifier(token.value)
             self.tokenizer.selectNext()
-            return Identifier(token.value)
+
+            if self.tokenizer.next.type == "LPAREN":
+                self.tokenizer.selectNext()
+                args = []
+
+                if self.tokenizer.next.type != "RPAREN":
+                    args.append(self.parseOrExpression())
+                    while self.tokenizer.next.type == "COMMA":
+                        self.tokenizer.selectNext()
+                        args.append(self.parseOrExpression())
+
+                if self.tokenizer.next.type != "RPAREN":
+                    raise ValueError("Parêntese fechando esperado")
+                self.tokenizer.selectNext()
+
+                return FuncCall(identifier.value, args)
+            
+            return identifier
         elif token.type == "STRING":
             self.tokenizer.selectNext()
             return StrVal(token.value)
@@ -780,6 +831,28 @@ class Parser:
                 
                 self.tokenizer.selectNext()
                 return Assignment(identifier, expr)
+            elif self.tokenizer.next.type == "LPAREN":
+                self.tokenizer.selectNext()
+                args = []
+
+                if self.tokenizer.next.type != "RPAREN":
+                    args.append(self.parseOrExpression())
+
+                    while self.tokenizer.next.type == "COMMA":
+                        self.tokenizer.selectNext()
+                        args.append(self.parseOrExpression())
+
+                if self.tokenizer.next.type != "RPAREN":
+                    raise ValueError("Parêntese fechando esperado")
+
+                self.tokenizer.selectNext()
+
+                if self.tokenizer.next.type != "SEMI":
+                    raise ValueError("Ponto e vírgula esperado")
+
+                self.tokenizer.selectNext()
+
+                return FuncCall(identifier.value, args)
         elif self.tokenizer.next.type == "PRINT":
             self.tokenizer.selectNext()
             
@@ -799,35 +872,6 @@ class Parser:
 
             self.tokenizer.selectNext()
             return Print(expr)
-        elif self.tokenizer.next.type == "VAR":
-            self.tokenizer.selectNext()
-
-            if self.tokenizer.next.type != "IDENTIFIER":
-                raise ValueError("Identificador esperado após 'var'")
-            
-            identifier = Identifier(self.tokenizer.next.value)
-            self.tokenizer.selectNext()
-
-            if self.tokenizer.next.type != "COLON":
-                raise ValueError("Dois pontos esperados após identificador")
-            
-            self.tokenizer.selectNext()
-            var_type = self.tokenizer.next.value
-
-            if var_type not in {"i32", "bool", "str"}:
-                raise ValueError(f"Tipo inválido: {var_type}. Esperado 'i32', 'bool' ou 'str'")
-            
-            self.tokenizer.selectNext()
-            expression = None
-
-            if self.tokenizer.next.type == "ASSIGN":
-                self.tokenizer.selectNext()
-                expression = self.parseOrExpression()
-
-            if self.tokenizer.next.type != "SEMI":
-                raise ValueError("Ponto e vírgula esperado")
-            
-            return VarDeC(identifier, var_type, expression)
         elif self.tokenizer.next.type == "IF":
             self.tokenizer.selectNext()
             
@@ -866,6 +910,14 @@ class Parser:
             block = self.parseBlock()
             
             return While(condition, block)
+        elif self.tokenizer.next.type == "RETURN":
+            self.tokenizer.selectNext()
+            expr = self.parseOrExpression()
+            return Return(expr)
+        elif self.tokenizer.next.type == "VAR":
+            return parseVarDec()
+        elif self.tokenizer.next.type == "LBRACE":
+            return parseBlock()
         else:
             raise ValueError(f"Token inesperado: {self.tokenizer.next.type}")
 
@@ -889,6 +941,117 @@ class Parser:
             raise ValueError("Chave esperada para início de bloco")
 
         return Block(statements)
+
+
+    def parseVarDec(self):
+        if self.tokenizer.next.type == "VAR":
+            self.tokenizer.selectNext()
+
+            if self.tokenizer.next.type != "IDENTIFIER":
+                raise ValueError("Identificador esperado após 'var'")
+            
+            identifier = Identifier(self.tokenizer.next.value)
+            self.tokenizer.selectNext()
+
+            if self.tokenizer.next.type != "COLON":
+                raise ValueError("Dois pontos esperados após identificador")
+            
+            self.tokenizer.selectNext()
+            var_type = self.tokenizer.next.value
+
+            if var_type not in {"i32", "bool", "str"}:
+                raise ValueError(f"Tipo inválido: {var_type}. Esperado 'i32', 'bool' ou 'str'")
+            
+            self.tokenizer.selectNext()
+            expression = None
+
+            if self.tokenizer.next.type == "ASSIGN":
+                self.tokenizer.selectNext()
+                expression = self.parseOrExpression()
+
+            if self.tokenizer.next.type != "SEMI":
+                raise ValueError("Ponto e vírgula esperado")
+
+            self.tokenizer.selectNext()
+            
+            return VarDeC(identifier, var_type, expression)
+
+
+    def parseFuncDeclaration(self):
+        self.tokenizer.selectNext()
+
+        if self.tokenizer.next.type != "IDENTIFIER":
+            raise ValueError("Nome da função esperado após 'func'")
+
+        func_name = Identifier(self.tokenizer.next.value)
+        self.tokenizer.selectNext()
+
+        if self.tokenizer.next.type != "LPAREN":
+            raise ValueError("Parêntese de abertura esperado após nome da função")
+
+        self.tokenizer.selectNext()
+
+        params = []
+
+        if self.tokenizer.next.type != "RPAREN":
+            while True:
+                if self.tokenizer.next.type != "IDENTIFIER":
+                    raise ValueError("Parâmetro inválido")
+
+                param_id = Identifier(self.tokenizer.next.value)
+                self.tokenizer.selectNext()
+
+                if self.tokenizer.next.type != "COLON":
+                    raise ValueError("Esperado ':' após nome do parâmetro")
+
+                self.tokenizer.selectNext()
+
+                param_type = self.tokenizer.next.value
+
+                if param_type not in {"i32", "str", "bool"}:
+                    raise ValueError("Tipo inválido de parâmetro")
+
+                self.tokenizer.selectNext()
+                params.append(VarDeC(param_id, param_type))
+
+                if self.tokenizer.next.type == "COMMA":
+                    self.tokenizer.selectNext()
+                    continue
+                elif self.tokenizer.next.type == "RPAREN":
+                    break
+                else:
+                    raise ValueError("Vírgula ou ')' esperado após parâmetro")
+
+        self.tokenizer.selectNext()
+
+        if self.tokenizer.next.type != "COLON":
+            raise ValueError("Esperado ':' após parâmetros da função")
+
+        self.tokenizer.selectNext()
+
+        return_type = self.tokenizer.next.value
+        self.tokenizer.selectNext()
+
+        if return_type not in {"i32", "str", "bool", "void"}:
+            raise ValueError("Tipo inválido de função")
+
+        body = self.parseBlock()
+
+        return FuncDec(func_name, params, body)
+
+
+    def parseProgram(self):
+        children = []
+
+        while self.tokenizer.next.type != "EOF":
+            if self.tokenizer.next.type == "VAR":
+                children.append(self.parseVarDec())
+            elif self.tokenizer.next.type == "FUNC":
+                children.append(self.parseFuncDeclaration())
+            else:
+                raise ValueError(f"Token inesperado no nível superior: {self.tokenizer.next.type}")
+
+        return Block(children)
     
 
     @staticmethod
@@ -896,19 +1059,22 @@ class Parser:
         tokenizer = Tokenizer(code, 0, None)
         tokenizer.selectNext()
         parser = Parser(tokenizer)
-        root = parser.parseBlock()
+        root = parser.parseProgram()
+        main = FuncCall("main", [])
 
         if tokenizer.next.type != "EOF":
             raise ValueError("Erro: expressão não consumiu todos os tokens. Verifique a sintaxe.")
         
-        return root
+        symbol_table = SymbolTable()
+        instructions = main.Evaluate(symbol_table)
 
     @staticmethod
     def geracodigo(code, filename):
         tokenizer = Tokenizer(code, 0, None)
         tokenizer.selectNext()
         parser = Parser(tokenizer)
-        root = parser.parseBlock()
+        root = parser.parseProgram()
+        main = FuncCall("main", [])
 
         if tokenizer.next.type != "EOF":
             raise ValueError("Erro: expressão não consumiu todos os tokens. Verifique a sintaxe.")
