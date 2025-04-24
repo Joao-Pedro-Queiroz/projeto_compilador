@@ -510,8 +510,9 @@ class Read(Node):
 
 
 class FuncDec(Node):
-    def __init__(self, name, parameters, body):
+    def __init__(self, name, parameters, return_type, body):
         super().__init__(name, parameters + [body])
+        self.return_type = return_type
 
     def Evaluate(self, symbol_table):
         global_table = symbol_table
@@ -519,9 +520,9 @@ class FuncDec(Node):
         while global_table.parent is not None:
             global_table = global_table.parent
 
-        global_table.declare(self.name, "func")
+        global_table.declare(self.name, self.return_type)
 
-        global_table.set(self.name, (self, "func", {"is_function": True}))
+        global_table.set(self.name, (self, self.return_type, {"is_function": True}))
 
         return (None, None)
 
@@ -1029,8 +1030,6 @@ class Parser:
 
             if self.tokenizer.next.type != "SEMI":
                 raise ValueError("Ponto e vírgula esperado")
-
-            self.tokenizer.selectNext()
             
             return VarDeC(identifier, var_type, expression)
 
@@ -1095,7 +1094,7 @@ class Parser:
 
         body = self.parseBlock()
 
-        return FuncDec(func_name, params, body)
+        return FuncDec(func_name, params, return_type, body)
 
 
     def parseProgram(self):
@@ -1104,8 +1103,10 @@ class Parser:
         while self.tokenizer.next.type != "EOF":
             if self.tokenizer.next.type == "VAR":
                 children.append(self.parseVarDec())
+                self.tokenizer.selectNext()
             elif self.tokenizer.next.type == "FUNC":
                 children.append(self.parseFuncDeclaration())
+                self.tokenizer.selectNext()
             else:
                 raise ValueError(f"Token inesperado no nível superior: {self.tokenizer.next.type}")
 
