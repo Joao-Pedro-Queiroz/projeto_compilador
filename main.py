@@ -514,7 +514,16 @@ class FuncDec(Node):
         super().__init__(name, parameters + [body])
 
     def Evaluate(self, symbol_table):
-        pass
+        global_table = symbol_table
+
+        while global_table.parent is not None:
+            global_table = global_table.parent
+
+        global_table.declare(self.name, "func")
+
+        global_table.set(self.name, (self, "func", {"is_function": True}))
+
+        return (None, None)
 
     def Generate(self, symbol_table):
         return []
