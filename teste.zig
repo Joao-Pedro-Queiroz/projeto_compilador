@@ -1,38 +1,11 @@
-{
-  x_1 = reader();
-  
-  print(x_1);
-  
-  if ((x_1 > 1 && !(x_1 < 1)) || x_1 == 3) {
-  	x_1 = 2;
+fn fac(x: i32) i32 {
+  if (x == 1) {
+    return 1;
   }
-  
-  x = 3+6/3   *  2 -+-  +  2*4/2 + 0/1 -((6+ ((4)))/(2)); // Teste // Teste 2
-  y_1 = 3;
-  y_1 = y_1 + x_1;
-  z__ = x + y_1;
-  
-  if (x_1 == 2) {
-  	x_1 = 2;
-  }
-  
-  if (x_1 == 3) {
-  	x_1 = 2;
-  } else {
-  	x_1 = 3;
-  }
-  
-  x_1 = 0;
-  while (x_1 < 1 || x == 2) {
-  	print(x_1);
-      x_1 = x_1 + 1;
-  } 
-  ;;;
-  
-  
-  // Saida final;
-  print(x_1);
-  print(x);
-  print(z__+1);
-  
+  return x * fac(x-1);
+}
+
+fn main() void {
+  var x_2:i32 = fac(4);
+  printf(x_2);
 }

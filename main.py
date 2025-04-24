@@ -84,13 +84,20 @@ class SymbolTable:
             raise Exception(f"Variable '{name}' not declared.")
 
     def get(self, name):
+        print(name)
+        print(self.table)
         if name in self.table:
-            value, _ = self.table[name]
+            entry = self.table[name]
+
+            if isinstance(entry, tuple) and len(entry) == 3 and entry[2].get("is_function"):
+                return entry
+
+            value, _ = entry
 
             if value is None:
                 raise Exception(f"Variable '{name}' used before assignment.")
             
-            return self.table[name]
+            return entry
         elif self.parent:
             return self.parent.get(name)    
         else:
@@ -471,10 +478,8 @@ class Block(Node):
             else:
                 result = statement.Evaluate(symbol_table)
 
-            if isinstance(statement, Return) or (
-                isinstance(result, tuple) and result != (None, None)
-            ):
-                return result
+            if isinstance(statement, Return):
+                return result    
 
         return (None, "void")
     
@@ -520,9 +525,9 @@ class FuncDec(Node):
         while global_table.parent is not None:
             global_table = global_table.parent
 
-        global_table.declare(self.name, self.return_type)
+        global_table.declare(self.value, self.return_type)
 
-        global_table.set(self.name, (self, self.return_type, {"is_function": True}))
+        global_table.set(self.value, (self, self.return_type, {"is_function": True}))
 
         return (None, None)
 
@@ -551,8 +556,9 @@ class FuncCall(Node):
         new_scope = SymbolTable(parent=symbol_table)
 
         for param_node, arg_node in zip(params, self.children):
-            param_name = param_node.value
-            param_type = param_node.children[0]
+            param_identifier = param_node.children[0]
+            param_name = param_identifier.value 
+            param_type = param_node.children[1] 
 
             value, val_type = arg_node.Evaluate(symbol_table)
 
@@ -563,6 +569,11 @@ class FuncCall(Node):
             new_scope.set(param_name, (value, val_type))
 
         result = body.Evaluate(new_scope)
+
+        if result[1] != return_type:
+            raise TypeError(f"Tipo de retorno da função '{self.value}' incompatível. Esperado '{return_type}', recebido '{result[1]}'.")
+
+        return result
 
         if result[1] != return_type:
             raise TypeError(f"Tipo de retorno da função '{self.value}' incompatível. Esperado '{return_type}', recebido '{result[1]}'.")
@@ -874,59 +885,6 @@ class Parser:
         return left      
     
 
-    def parseBlock(self):
-        statements = []
-
-        if self.tokenizer.next.type == "LBRACE":
-            self.tokenizer.selectNext()
-
-            while self.tokenizer.next.type != "RBRACE":
-                if self.tokenizer.next.type == "EOF":
-                     raise ValueError("Erro de sintaxe: bloco não fechado corretamente")
-
-                statements.append(self.parseStatement())
-
-            self.tokenizer.selectNext()
-        else:
-            raise ValueError("Chave esperada para início de bloco")
-
-        return Block(statements)
-
-
-    def parseVarDec(self):
-        if self.tokenizer.next.type == "VAR":
-            self.tokenizer.selectNext()
-
-            if self.tokenizer.next.type != "IDENTIFIER":
-                raise ValueError("Identificador esperado após 'var'")
-            
-            identifier = Identifier(self.tokenizer.next.value)
-            self.tokenizer.selectNext()
-
-            if self.tokenizer.next.type != "COLON":
-                raise ValueError("Dois pontos esperados após identificador")
-            
-            self.tokenizer.selectNext()
-            var_type = self.tokenizer.next.value
-
-            if var_type not in {"i32", "bool", "str"}:
-                raise ValueError(f"Tipo inválido: {var_type}. Esperado 'i32', 'bool' ou 'str'")
-            
-            self.tokenizer.selectNext()
-            expression = None
-
-            if self.tokenizer.next.type == "ASSIGN":
-                self.tokenizer.selectNext()
-                expression = self.parseOrExpression()
-
-            if self.tokenizer.next.type != "SEMI":
-                raise ValueError("Ponto e vírgula esperado")
-
-            self.tokenizer.selectNext()
-            
-            return VarDeC(identifier, var_type, expression)
-
-    
     def parseStatement(self):
         if self.tokenizer.next.type == "SEMI":
             self.tokenizer.selectNext() 
@@ -1029,11 +987,65 @@ class Parser:
             expr = self.parseOrExpression()
             return Return(expr)
         elif self.tokenizer.next.type == "VAR":
-            return parseVarDec()
+            return self.parseVarDec()
         elif self.tokenizer.next.type == "LBRACE":
-            return parseBlock()
+            return self.parseBlock()
         else:
             raise ValueError(f"Token inesperado: {self.tokenizer.next.type}")
+    
+
+    def parseBlock(self):
+        statements = []
+
+        if self.tokenizer.next.type == "LBRACE":
+            self.tokenizer.selectNext()
+
+            while self.tokenizer.next.type != "RBRACE":
+                if self.tokenizer.next.type == "EOF":
+                     raise ValueError("Erro de sintaxe: bloco não fechado corretamente")
+  
+
+                statements.append(self.parseStatement())
+
+            self.tokenizer.selectNext()
+        else:
+            raise ValueError("Chave esperada para início de bloco")
+
+        return Block(statements)
+
+
+    def parseVarDec(self):
+        if self.tokenizer.next.type == "VAR":
+            self.tokenizer.selectNext()
+
+            if self.tokenizer.next.type != "IDENTIFIER":
+                raise ValueError("Identificador esperado após 'var'")
+            
+            identifier = Identifier(self.tokenizer.next.value)
+            self.tokenizer.selectNext()
+
+            if self.tokenizer.next.type != "COLON":
+                raise ValueError("Dois pontos esperados após identificador")
+            
+            self.tokenizer.selectNext()
+            var_type = self.tokenizer.next.value
+
+            if var_type not in {"i32", "bool", "str"}:
+                raise ValueError(f"Tipo inválido: {var_type}. Esperado 'i32', 'bool' ou 'str'")
+            
+            self.tokenizer.selectNext()
+            expression = None
+
+            if self.tokenizer.next.type == "ASSIGN":
+                self.tokenizer.selectNext()
+                expression = self.parseOrExpression()
+
+            if self.tokenizer.next.type != "SEMI":
+                raise ValueError("Ponto e vírgula esperado")
+
+            self.tokenizer.selectNext()
+            
+            return VarDeC(identifier, var_type, expression)
 
 
     def parseFuncDeclaration(self):
@@ -1118,10 +1130,26 @@ class Parser:
 
         parser = Parser(tokenizer)
         root = parser.parseProgram()
-        main = FuncCall("main", [])
-        
-        symbol_table = SymbolTable()
-        main.Evaluate(symbol_table)
+
+        global_table = SymbolTable()
+
+        # Só declara as funções (sem executar o bloco principal)
+        for func in root.children:
+            if isinstance(func, FuncDec):
+                func.Evaluate(global_table)
+
+        # Verifica se main foi declarada
+        try:
+            main_entry = global_table.get("main")
+        except Exception:
+            raise Exception("Função 'main' não foi declarada.")
+
+        # Cria uma SymbolTable encadeada para simular o escopo da execução
+        main_scope = SymbolTable(parent=global_table)
+
+        # Executa a chamada à main
+        main_call = FuncCall("main", [])
+        main_call.Evaluate(main_scope)
 
     @staticmethod
     def geracodigo(code, filename):
@@ -1156,4 +1184,4 @@ if __name__ == "__main__":
         expressao = file.read()
 
     expressao = PrePro.filter(expressao)
-    Parser.geracodigo(expressao, arquivo)
+    Parser.run(expressao)
