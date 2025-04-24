@@ -874,6 +874,59 @@ class Parser:
         return left      
     
 
+    def parseBlock(self):
+        statements = []
+
+        if self.tokenizer.next.type == "LBRACE":
+            self.tokenizer.selectNext()
+
+            while self.tokenizer.next.type != "RBRACE":
+                if self.tokenizer.next.type == "EOF":
+                     raise ValueError("Erro de sintaxe: bloco não fechado corretamente")
+
+                statements.append(self.parseStatement())
+
+            self.tokenizer.selectNext()
+        else:
+            raise ValueError("Chave esperada para início de bloco")
+
+        return Block(statements)
+
+
+    def parseVarDec(self):
+        if self.tokenizer.next.type == "VAR":
+            self.tokenizer.selectNext()
+
+            if self.tokenizer.next.type != "IDENTIFIER":
+                raise ValueError("Identificador esperado após 'var'")
+            
+            identifier = Identifier(self.tokenizer.next.value)
+            self.tokenizer.selectNext()
+
+            if self.tokenizer.next.type != "COLON":
+                raise ValueError("Dois pontos esperados após identificador")
+            
+            self.tokenizer.selectNext()
+            var_type = self.tokenizer.next.value
+
+            if var_type not in {"i32", "bool", "str"}:
+                raise ValueError(f"Tipo inválido: {var_type}. Esperado 'i32', 'bool' ou 'str'")
+            
+            self.tokenizer.selectNext()
+            expression = None
+
+            if self.tokenizer.next.type == "ASSIGN":
+                self.tokenizer.selectNext()
+                expression = self.parseOrExpression()
+
+            if self.tokenizer.next.type != "SEMI":
+                raise ValueError("Ponto e vírgula esperado")
+
+            self.tokenizer.selectNext()
+            
+            return VarDeC(identifier, var_type, expression)
+
+    
     def parseStatement(self):
         if self.tokenizer.next.type == "SEMI":
             self.tokenizer.selectNext() 
@@ -981,59 +1034,6 @@ class Parser:
             return parseBlock()
         else:
             raise ValueError(f"Token inesperado: {self.tokenizer.next.type}")
-    
-
-    def parseBlock(self):
-        statements = []
-
-        if self.tokenizer.next.type == "LBRACE":
-            self.tokenizer.selectNext()
-
-            while self.tokenizer.next.type != "RBRACE":
-                if self.tokenizer.next.type == "EOF":
-                     raise ValueError("Erro de sintaxe: bloco não fechado corretamente")
-
-                statements.append(self.parseStatement())
-
-            self.tokenizer.selectNext()
-        else:
-            raise ValueError("Chave esperada para início de bloco")
-
-        return Block(statements)
-
-
-    def parseVarDec(self):
-        if self.tokenizer.next.type == "VAR":
-            self.tokenizer.selectNext()
-
-            if self.tokenizer.next.type != "IDENTIFIER":
-                raise ValueError("Identificador esperado após 'var'")
-            
-            identifier = Identifier(self.tokenizer.next.value)
-            self.tokenizer.selectNext()
-
-            if self.tokenizer.next.type != "COLON":
-                raise ValueError("Dois pontos esperados após identificador")
-            
-            self.tokenizer.selectNext()
-            var_type = self.tokenizer.next.value
-
-            if var_type not in {"i32", "bool", "str"}:
-                raise ValueError(f"Tipo inválido: {var_type}. Esperado 'i32', 'bool' ou 'str'")
-            
-            self.tokenizer.selectNext()
-            expression = None
-
-            if self.tokenizer.next.type == "ASSIGN":
-                self.tokenizer.selectNext()
-                expression = self.parseOrExpression()
-
-            if self.tokenizer.next.type != "SEMI":
-                raise ValueError("Ponto e vírgula esperado")
-
-            self.tokenizer.selectNext()
-            
-            return VarDeC(identifier, var_type, expression)
 
 
     def parseFuncDeclaration(self):
