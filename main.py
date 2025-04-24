@@ -44,7 +44,8 @@ class Code:
 
 
 class SymbolTable:
-    def __init__(self):
+    def __init__(self, parent=None):
+        self.parent = parent
         self.table = {}
         self.tableoffset = {}
         self.offset = 0
@@ -55,7 +56,12 @@ class SymbolTable:
         return self.offset
 
     def get_offset(self, name):
-        return self.tableoffset[name]["offset"]
+        if name in self.tableoffset:
+            return self.tableoffset[name]["offset"]
+        elif self.parent:
+            return self.parent.get_offset(name)
+        else:
+            raise Exception(f"Variable '{name}' not declared.")
 
     def declare(self, name, var_type):
         if name in self.table:
@@ -64,27 +70,31 @@ class SymbolTable:
         self.table[name] = (None, var_type)
 
     def set(self, name, value):
-        if name not in self.table:
-            raise Exception(f"Variable '{name}' not declared.")
-        
-        _, expected_type = self.table[name]
-        actual_type = value[1]
+        if name in self.table:
+            _, expected_type = self.table[name]
+            actual_type = value[1]
 
-        if expected_type != actual_type:
-            raise TypeError(f"Type mismatch in assignment to '{name}'. Expected '{expected_type}', got '{actual_type}'.")
-        
-        self.table[name] = value
+            if expected_type != actual_type:
+                raise TypeError(f"Type mismatch in assignment to '{name}'. Expected '{expected_type}', got '{actual_type}'.")
+            
+            self.table[name] = value
+        elif self.parent:
+            self.parent.set(name, value)
+        else:
+            raise Exception(f"Variable '{name}' not declared.")
 
     def get(self, name):
-        if name not in self.table:
-            raise Exception(f"Variable '{name}' not declared.")
-        
-        value, _ = self.table[name]
+        if name in self.table:
+            value, _ = self.table[name]
 
-        if value is None:
-            raise Exception(f"Variable '{name}' used before assignment.")
-        
-        return self.table[name]  # (value, type)
+            if value is None:
+                raise Exception(f"Variable '{name}' used before assignment.")
+            
+            return self.table[name]
+        elif self.parent:
+            return self.parent.get(name)    
+        else:
+            raise Exception(f"Variable '{name}' not declared.")
 
 
 class Node(ABC):
