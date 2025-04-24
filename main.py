@@ -534,7 +534,39 @@ class FuncCall(Node):
         super().__init__(name, arguments)
 
     def Evaluate(self, symbol_table):
-        pass
+        func_entry = symbol_table.get(self.value)
+        if not func_entry:
+            raise Exception(f"Função '{self.value}' não declarada.")
+
+        func_node, return_type, metadata = func_entry
+        if not metadata.get("is_function", False):
+            raise Exception(f"'{self.value}' não é uma função.")
+
+        *params, body = func_node.children
+
+        if len(params) != len(self.children):
+            raise Exception(f"Função '{self.value}' esperava {len(params)} argumentos, recebeu {len(self.children)}.")
+
+        new_scope = SymbolTable(parent=symbol_table)
+
+        for param_node, arg_node in zip(params, self.children):
+            param_name = param_node.value
+            param_type = param_node.children[0]
+
+            value, val_type = arg_node.Evaluate(symbol_table)
+
+            if param_type != val_type:
+                raise TypeError(f"Tipo do argumento '{param_name}' incompatível. Esperado '{param_type}', recebido '{val_type}'.")
+
+            new_scope.declare(param_name, param_type)
+            new_scope.set(param_name, (value, val_type))
+
+        result = body.Evaluate(new_scope)
+
+        if result[1] != return_type:
+            raise TypeError(f"Tipo de retorno da função '{self.value}' incompatível. Esperado '{return_type}', recebido '{result[1]}'.")
+
+        return result
 
     def Generate(self, symbol_table):
         return []
