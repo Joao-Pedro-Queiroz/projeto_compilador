@@ -1040,7 +1040,7 @@ class Parser:
         if self.tokenizer.next.type != "IDENTIFIER":
             raise ValueError("Nome da função esperado após 'func'")
 
-        func_name = Identifier(self.tokenizer.next.value)
+        func_name = self.tokenizer.next.value
         self.tokenizer.selectNext()
 
         if self.tokenizer.next.type != "LPAREN":
