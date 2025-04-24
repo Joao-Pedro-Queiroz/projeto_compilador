@@ -465,7 +465,16 @@ class Block(Node):
 
     def Evaluate(self, symbol_table):
         for statement in self.children:
-            statement.Evaluate(symbol_table)
+            if isinstance(statement, Block):
+                new_scope = SymbolTable(parent=symbol_table)
+                result = statement.Evaluate(new_scope)
+            else:
+                result = statement.Evaluate(symbol_table)
+
+            if isinstance(statement, Return) or (
+                isinstance(result, tuple) and result != (None, None)
+            ):
+                return result
 
         return (None, None)
     
@@ -527,7 +536,7 @@ class Return(Node):
         super().__init__("return", [expression])
 
     def Evaluate(self, symbol_table):
-        pass
+        return self.children[0].Evaluate(symbol_table)
 
     def Generate(self, symbol_table):
         return []
