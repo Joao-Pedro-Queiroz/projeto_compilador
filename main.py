@@ -920,8 +920,6 @@ class Parser:
             return parseBlock()
         else:
             raise ValueError(f"Token inesperado: {self.tokenizer.next.type}")
-
-        return NoOp()
     
 
     def parseBlock(self):
