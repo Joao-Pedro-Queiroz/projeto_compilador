@@ -470,15 +470,28 @@ class Block(Node):
 
     def Evaluate(self, symbol_table):
         for statement in self.children:
+            # 1) bloco aninhado (por exemplo: else se for Block)
             if isinstance(statement, Block):
                 new_scope = SymbolTable(parent=symbol_table)
                 result = statement.Evaluate(new_scope)
-            else:
+                if result is not None:
+                    return result
+
+            # 2) retorno explícito
+            elif isinstance(statement, Return):
+                return statement.Evaluate(symbol_table)
+
+            # 3) if / while — se devolver resultado não-None, é um return
+            elif isinstance(statement, If) or isinstance(statement, While):
                 result = statement.Evaluate(symbol_table)
+                if result is not None:
+                    return result
 
-            if isinstance(statement, Return):
-                return result    
+            # 4) todo o resto (declaração, atribuição, print…)
+            else:
+                statement.Evaluate(symbol_table)
 
+        # sem return encontrado
         return (None, "void")
     
     def Generate(self, symbol_table):
