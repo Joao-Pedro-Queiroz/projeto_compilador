@@ -464,42 +464,18 @@ class While(Node):
 
 
 class Block(Node):
-    def __init__(self, statements):
-        super().__init__("block", statements)
-
+    def init(self, statements):
+        super().init("block", statements)
 
     def Evaluate(self, symbol_table):
-        for statement in self.children:
-            # 1) bloco aninhado (por exemplo: else se for Block)
-            if isinstance(statement, Block):
-                new_scope = SymbolTable(parent=symbol_table)
-                result = statement.Evaluate(new_scope)
-                if result is not None:
-                    return result
-
-            # 2) retorno explícito
-            elif isinstance(statement, Return):
-                return statement.Evaluate(symbol_table)
-
-            # 3) if / while — se devolver resultado não-None, é um return
-            elif isinstance(statement, If) or isinstance(statement, While):
-                result = statement.Evaluate(symbol_table)
-                if result is not None:
-                    return result
-
-            # 4) todo o resto (declaração, atribuição, print…)
-            else:
-                statement.Evaluate(symbol_table)
-
-        # sem return encontrado
+        for stmt in self.children:
+            stmt.Evaluate(symbol_table)
         return (None, "void")
-    
+
     def Generate(self, symbol_table):
         code = []
-
         for stmt in self.children:
             code += stmt.Generate(symbol_table)
-
         return code
 
 
@@ -547,60 +523,55 @@ class FuncDec(Node):
 
 
 class FuncCall(Node):
-    def __init__(self, name, arguments):
-        super().__init__(name, arguments)
+    def init(self, name, arguments):
+        super().init(name, arguments)
 
     def Evaluate(self, symbol_table):
         func_entry = symbol_table.get(self.value)
-        if not func_entry:
-            raise Exception(f"Função '{self.value}' não declarada.")
-
         func_node, return_type, metadata = func_entry
-        if not metadata.get("is_function", False):
-            raise Exception(f"'{self.value}' não é uma função.")
-
         *params, body = func_node.children
 
-        if len(params) != len(self.children):
-            raise Exception(f"Função '{self.value}' esperava {len(params)} argumentos, recebeu {len(self.children)}.")
-
+        # prepara novo escopo e inicializa parâmetros
         new_scope = SymbolTable(parent=symbol_table)
-
         for param_node, arg_node in zip(params, self.children):
-            param_identifier = param_node.children[0]
-            param_name = param_identifier.value 
-            param_type = param_node.children[1] 
+            param_id = param_node.children[0].value
+            param_type = param_node.children[1]
+            val, val_type = arg_node.Evaluate(symbol_table)
+            if val_type != param_type:
+                raise TypeError(f"Tipo do argumento '{param_id}' incompatível.")
+            new_scope.declare(param_id, param_type)
+            new_scope.set(param_id, (val, val_type))
 
-            value, val_type = arg_node.Evaluate(symbol_table)
-
-            if param_type != val_type:
-                raise TypeError(f"Tipo do argumento '{param_name}' incompatível. Esperado '{param_type}', recebido '{val_type}'.")
-
-            new_scope.declare(param_name, param_type)
-            new_scope.set(param_name, (value, val_type))
-
-        result = body.Evaluate(new_scope)
-
-        if result[1] != return_type:
-            raise TypeError(f"Tipo de retorno da função '{self.value}' incompatível. Esperado '{return_type}', recebido '{result[1]}'.")
-
-        return result
+        # executa e captura retorno
+        try:
+            body.Evaluate(new_scope)
+            result = (None, "void")
+        except ReturnValue as rv:
+            result = (rv.value, rv.typ)
 
         if result[1] != return_type:
-            raise TypeError(f"Tipo de retorno da função '{self.value}' incompatível. Esperado '{return_type}', recebido '{result[1]}'.")
-
+            raise TypeError(
+                f"Tipo de retorno da função '{self.value}' incompatível. "
+                f"Esperado '{return_type}', recebido '{result[1]}'."
+            )
         return result
 
     def Generate(self, symbol_table):
         return []
 
+class ReturnValue(Exception):
+    def _init_(self, value, typ):
+        super()._init_()
+        self.value = value
+        self.typ = typ
 
 class Return(Node):
-    def __init__(self, expression):
-        super().__init__("return", [expression])
+    def init(self, expression):
+        super().init("return", [expression])
 
     def Evaluate(self, symbol_table):
-        return self.children[0].Evaluate(symbol_table)
+        value, typ = self.children[0].Evaluate(symbol_table)
+        raise ReturnValue(value, typ)
 
     def Generate(self, symbol_table):
         return []
@@ -1137,28 +1108,28 @@ class Parser:
         tokenizer.selectNext()
 
         if tokenizer.next.type == "EOF":
-            raise ValueError("Erro: expressão não consumiu todos os tokens. Verifique a sintaxe.")
+            raise ValueError("Erro: expressão não consumiu todos os tokens.")
 
         parser = Parser(tokenizer)
         root = parser.parseProgram()
 
         global_table = SymbolTable()
+        # 1) declara variáveis do nível superior
+        for node in root.children:
+            if isinstance(node, VarDeC):
+                node.Evaluate(global_table)
+        # 2) declara funções
+        for node in root.children:
+            if isinstance(node, FuncDec):
+                node.Evaluate(global_table)
 
-        # Só declara as funções (sem executar o bloco principal)
-        for func in root.children:
-            if isinstance(func, FuncDec):
-                func.Evaluate(global_table)
-
-        # Verifica se main foi declarada
+        # checa main
         try:
-            main_entry = global_table.get("main")
+            global_table.get("main")
         except Exception:
             raise Exception("Função 'main' não foi declarada.")
 
-        # Cria uma SymbolTable encadeada para simular o escopo da execução
         main_scope = SymbolTable(parent=global_table)
-
-        # Executa a chamada à main
         main_call = FuncCall("main", [])
         main_call.Evaluate(main_scope)
 
