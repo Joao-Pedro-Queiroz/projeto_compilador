@@ -468,8 +468,10 @@ class Block(Node):
         super().__init__("block", statements)
 
     def Evaluate(self, symbol_table):
+        # a cada bloco, criamos um novo escopo filho
+        new_scope = SymbolTable(parent=symbol_table)
         for stmt in self.children:
-            stmt.Evaluate(symbol_table)
+            stmt.Evaluate(new_scope)
         return (None, "void")
 
     def Generate(self, symbol_table):
@@ -527,28 +529,36 @@ class FuncCall(Node):
         super().__init__(name, arguments)
 
     def Evaluate(self, symbol_table):
+        # recupera a entrada da função
         func_entry = symbol_table.get(self.value)
         func_node, return_type, metadata = func_entry
-        *params, body = func_node.children
+        params, body = func_node.children[:-1], func_node.children[-1]
 
-        # prepara novo escopo e inicializa parâmetros
+        # 1) checa quantidade de argumentos
+        if len(self.children) != len(params):
+            raise Exception(
+                f"Função '{self.value}' esperava {len(params)} argumentos, recebeu {len(self.children)}."
+            )
+
+        # 2) prepara escopo e inicializa parâmetros
         new_scope = SymbolTable(parent=symbol_table)
         for param_node, arg_node in zip(params, self.children):
-            param_id = param_node.children[0].value
-            param_type = param_node.children[1]
-            val, val_type = arg_node.Evaluate(symbol_table)
-            if val_type != param_type:
-                raise TypeError(f"Tipo do argumento '{param_id}' incompatível.")
-            new_scope.declare(param_id, param_type)
-            new_scope.set(param_id, (val, val_type))
+            pname = param_node.children[0].value
+            ptype = param_node.children[1]
+            v, t = arg_node.Evaluate(symbol_table)
+            if t != ptype:
+                raise TypeError(f"Tipo do argumento '{pname}' incompatível. Esperado '{ptype}', recebido '{t}'.")
+            new_scope.declare(pname, ptype)
+            new_scope.set(pname, (v, t))
 
-        # executa e captura retorno
+        # 3) executa corpo e captura ReturnValue
         try:
             body.Evaluate(new_scope)
             result = (None, "void")
         except ReturnValue as rv:
             result = (rv.value, rv.typ)
 
+        # 4) verifica tipo de retorno
         if result[1] != return_type:
             raise TypeError(
                 f"Tipo de retorno da função '{self.value}' incompatível. "
@@ -1106,33 +1116,35 @@ class Parser:
     def run(code):
         tokenizer = Tokenizer(code, 0, None)
         tokenizer.selectNext()
-
         if tokenizer.next.type == "EOF":
             raise ValueError("Erro: expressão não consumiu todos os tokens.")
 
         parser = Parser(tokenizer)
         root = parser.parseProgram()
 
+        # 1) declara VARs de nível superior
         global_table = SymbolTable()
-        # 1) declara variáveis do nível superior
         for node in root.children:
             if isinstance(node, VarDeC):
                 node.Evaluate(global_table)
-        # 2) declara funções
+
+        # 2) declara as funções
         for node in root.children:
             if isinstance(node, FuncDec):
                 node.Evaluate(global_table)
 
-        # checa main
+        # 3) verifica main
         try:
             global_table.get("main")
         except Exception:
             raise Exception("Função 'main' não foi declarada.")
 
+        # 4) executa main
         main_scope = SymbolTable(parent=global_table)
         main_call = FuncCall("main", [])
         main_call.Evaluate(main_scope)
 
+        
     @staticmethod
     def geracodigo(code, filename):
         tokenizer = Tokenizer(code, 0, None)
