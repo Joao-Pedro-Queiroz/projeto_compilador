@@ -464,8 +464,8 @@ class While(Node):
 
 
 class Block(Node):
-    def init(self, statements):
-        super().init("block", statements)
+    def __init__(self, statements):
+        super().__init__("block", statements)
 
     def Evaluate(self, symbol_table):
         for stmt in self.children:
@@ -523,8 +523,8 @@ class FuncDec(Node):
 
 
 class FuncCall(Node):
-    def init(self, name, arguments):
-        super().init(name, arguments)
+    def __init__(self, name, arguments):
+        super().__init__(name, arguments)
 
     def Evaluate(self, symbol_table):
         func_entry = symbol_table.get(self.value)
@@ -560,14 +560,14 @@ class FuncCall(Node):
         return []
 
 class ReturnValue(Exception):
-    def _init_(self, value, typ):
-        super()._init_()
+    def __init__(self, value, typ):
+        super().__init__()
         self.value = value
         self.typ = typ
 
 class Return(Node):
-    def init(self, expression):
-        super().init("return", [expression])
+    def __init__(self, expression):
+        super().__init__("return", [expression])
 
     def Evaluate(self, symbol_table):
         value, typ = self.children[0].Evaluate(symbol_table)
